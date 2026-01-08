@@ -47,7 +47,6 @@
 
         .tip { font-size: 0.85rem; color: #999; margin-top: 30px; text-align: center; border-top: 1px solid #333; padding-top: 15px;}
         
-        /* 錯誤訊息專用框 */
         #rescue-console { display: none; background: #500; color: #fff; padding: 20px; margin-bottom: 20px; border: 2px solid red; white-space: pre-wrap; font-size: 1rem; border-radius: 8px; }
     </style>
 </head>
@@ -64,19 +63,18 @@
 
     <div id="bossList">
         <div style="text-align:center; padding: 50px; color: #aaa;">
-            正在啟動系統...<br>
-            (如果此畫面停留超過 2 秒，代表程式遇到阻礙)
+            正在啟動系統...
         </div>
     </div>
 
     <div class="tip">
-        <strong>v12.1 救援版：</strong><br>
-        已內建錯誤偵測系統，若程式卡住會自動回報原因。
+        <strong>v12.2 更新：</strong><br>
+        複製功能已新增工具網址，方便盟友直接點擊使用。
     </div>
 </div>
 
 <script>
-// --- 全局錯誤攔截 (最優先執行) ---
+// --- 全局錯誤攔截 ---
 window.onerror = function(msg, url, line, col, error) {
     const box = document.getElementById('rescue-console');
     box.style.display = 'block';
@@ -93,7 +91,7 @@ const rawData = [
     { name: "博卡頓(45)", cd: 24, type: "fixed", loc: "業報3F", fixTime: "20:00" },
     { name: "泰米爾(48)", cd: 24, type: "fixed", loc: "尼夫萊爾城", fixTime: "22:00" },
     
-    { name: "普魯特(65)", cd: 6, type: "cd", loc: "地獄3F", initTime: "1/8 10:15" },
+    { name: "普魯特(65)", cd: 6, type: "cd", loc: "地獄3F", initTime: "1/8 16:36" },
     { name: "格里貢(55)", cd: 12, type: "cd", loc: "倒轉火紅荒野", initTime: "1/8 15:15" },
     { name: "佩爾(77)", cd: 24, type: "cd", loc: "罪惡3F", initTime: "1/8 15:15" },
     { name: "亞拉金(78)", cd: 24, type: "cd", loc: "雷歐城", initTime: "1/8 15:19" }, 
@@ -126,15 +124,12 @@ function parseInitTime(str) {
 }
 
 // --- 3. 核心邏輯 ---
-
 function init() {
-    // 強制重置一次，避免舊資料卡住
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             const savedData = JSON.parse(saved);
             bosses = rawData.map((b, idx) => {
-                // 固定王永遠重算，不讀取存檔
                 if (b.type === 'fixed') {
                     return { ...b, id: idx, nextSpawn: null };
                 }
@@ -146,18 +141,17 @@ function init() {
             loadDefaults();
         }
         
-        recalcFixedBosses(); // 計算固定王
-        renderStaticList();  // 畫出列表
-        updateTimers();      // 啟動倒數
+        recalcFixedBosses();
+        renderStaticList();
+        updateTimers();
         
-        // 啟動循環
         setInterval(() => {
             recalcFixedBosses();
             updateTimers();
         }, 1000);
         
     } catch (e) {
-        throw new Error("初始化失敗: " + e.message); // 拋出錯誤讓 onerror 捕捉
+        throw new Error("初始化失敗: " + e.message);
     }
 }
 
@@ -177,8 +171,6 @@ function recalcFixedBosses() {
             const [fh, fm] = boss.fixTime.split(':').map(Number);
             let target = new Date();
             target.setHours(fh, fm, 0, 0);
-            
-            // 若今天時間已過，則設為明天
             if (now.getTime() > target.getTime()) {
                 target.setDate(target.getDate() + 1);
             }
@@ -234,7 +226,7 @@ function updateTimers() {
         const timerEl = document.getElementById(`timer-${boss.id}`);
         const predictEl = document.getElementById(`predict-${boss.id}`);
         
-        if (!cardEl || !timerEl) return; // 元素還沒畫好就跳過
+        if (!cardEl || !timerEl) return;
 
         let statusClass = "status-cd"; 
         let timerText = "-- : --";
@@ -301,7 +293,7 @@ window.update = function(id) {
         
         input.value = ""; 
         saveData();
-        renderStaticList(); // 只有手動更新時才重排列表
+        renderStaticList();
     }
 };
 
@@ -312,11 +304,16 @@ window.hardReset = function() {
     }
 };
 
+// [修改重點]：在複製文字的最上方加入工具網址
 window.copyToDiscord = function() {
     const now = new Date().getTime();
     const list = [...bosses].filter(b => b.nextSpawn).sort((a,b) => a.nextSpawn - b.nextSpawn);
     
-    let text = "📢 **月歸的吃王時間表**\n https://willa0916.github.io/zenonia-boss/ \n ```diff\n";
+    // 這裡加上了網址，且放在代碼區塊外
+    let text = "📢 **起床吃王了**\n";
+    text += "🔗 傳送門 https://willa0916.github.io/zenonia-boss/\n\n";
+    text += "```diff\n";
+    
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -327,10 +324,10 @@ window.copyToDiscord = function() {
         text += `${icon} ${b.name} (${b.loc})\n      時間: ${tStr}\n`;
     });
     text += "```";
+    
     navigator.clipboard.writeText(text).then(()=>alert("已複製到剪貼簿！")).catch(()=>alert("複製失敗，請手動選取"));
 };
 
-// 確保 DOM 載入後執行
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
