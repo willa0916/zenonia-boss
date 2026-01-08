@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>👀月歸的吃王小教室👀</title>
+    <title>月歸的吃王時間表</title>
     <style>
         /* --- 樣式設定 --- */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #202225; color: #dcddde; margin: 0; padding: 20px; }
         .container { max-width: 900px; margin: 0 auto; }
         
-        /* 標題與按鈕 */
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #2f3136; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         h2 { color: #f04747; margin: 0; font-size: 1.6rem; display: flex; align-items: center; gap: 10px; text-shadow: 1px 1px 2px black;}
         
@@ -18,13 +17,12 @@
         .btn-copy:hover { background-color: #3ca374; }
         .btn-reset { background-color: #ed4245; font-size: 0.8rem;}
         
-        /* BOSS 卡片 */
         .boss-card { background-color: #2f3136; padding: 12px 18px; margin-bottom: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-left: 6px solid #72767d; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background-color 0.3s, border-color 0.3s; }
         
-        /* 狀態顏色 (將由 JS 動態切換) */
-        .status-active { border-left-color: #ed4245 !important; background-color: #382627 !important; } /* 已出生 */
-        .status-soon { border-left-color: #f1c40f !important; background-color: #363328 !important; }   /* 快出了 */
-        .status-cd { border-left-color: #5865F2 !important; }                                         /* 冷卻中 */
+        .status-active { border-left-color: #ed4245 !important; background-color: #382627 !important; }
+        .status-soon { border-left-color: #f1c40f !important; background-color: #363328 !important; }
+        .status-cd { border-left-color: #5865F2 !important; }
+        .status-fixed { border-left-color: #9b59b6 !important; }
         
         .boss-info { flex-grow: 1; min-width: 220px; margin-right: 15px; }
         .boss-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
@@ -32,64 +30,68 @@
         .boss-meta { font-size: 0.75rem; background: #4f545c; padding: 3px 8px; border-radius: 10px; color: #eee; }
         .boss-loc { font-size: 0.9rem; color: #b9bbbe; }
         
-        /* 計時器文字 */
         .boss-timer { font-size: 1.4rem; font-weight: bold; color: #dcddde; margin-top: 5px; font-family: 'Consolas', monospace; letter-spacing: 1px;}
         .highlight-text { color: #f1c40f; text-shadow: 0 0 5px rgba(241, 196, 15, 0.5); }
         .boss-predict { font-size: 0.9rem; color: #888; margin-top: 2px; }
 
-        /* 輸入區 */
-        .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-        .input-row { display: flex; gap: 5px; }
+        .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 240px; justify-content: center;}
+        .input-row { display: flex; gap: 5px; width: 100%; justify-content: flex-end;}
         
-        input[type="datetime-local"] {
-            background: #40444b;
-            border: 1px solid #202225;
-            color: white;
-            padding: 8px;
-            border-radius: 4px;
-            font-family: sans-serif;
-            font-size: 0.95rem;
-            cursor: pointer;
-        }
+        input[type="datetime-local"] { background: #40444b; border: 1px solid #202225; color: white; padding: 8px; border-radius: 4px; font-family: sans-serif; font-size: 0.95rem; cursor: pointer; width: 100%; }
         input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
-        .btn-update { background-color: #5865F2; padding: 8px 15px; }
+        .btn-update { background-color: #5865F2; padding: 8px 15px; width: 80px;}
         .btn-update:hover { background-color: #4752c4; }
 
+        .auto-tag { background-color: #2f3136; border: 1px solid #9b59b6; color: #9b59b6; padding: 8px 15px; border-radius: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+
         .tip { font-size: 0.85rem; color: #999; margin-top: 30px; text-align: center; border-top: 1px solid #333; padding-top: 15px;}
-        #error-console { display: none; background: #500; color: #fdd; padding: 15px; margin-bottom: 20px; border: 1px solid red; white-space: pre-wrap; }
+        
+        /* 錯誤訊息專用框 */
+        #rescue-console { display: none; background: #500; color: #fff; padding: 20px; margin-bottom: 20px; border: 2px solid red; white-space: pre-wrap; font-size: 1rem; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="error-console"></div>
+    <div id="rescue-console"></div>
 
     <div class="header-area">
-        <h2>👀月歸的吃王小教室👀</h2>
+        <h2>⚔️月歸的吃王時間表⚔️</h2>
         <button class="btn btn-reset" onclick="hardReset()">⚠️ 重置回預設值</button>
         <button class="btn btn-copy" onclick="copyToDiscord()">📋 複製到 Discord</button>
     </div>
 
     <div id="bossList">
-        <div style="text-align:center; padding: 50px; color: #aaa;">初始化資料中...</div>
+        <div style="text-align:center; padding: 50px; color: #aaa;">
+            正在啟動系統...<br>
+            (如果此畫面停留超過 2 秒，代表程式遇到阻礙)
+        </div>
     </div>
 
     <div class="tip">
-        <strong>v11.0 更新：</strong><br>
-        已更新「武庫拉」的初始時間。
+        <strong>v12.1 救援版：</strong><br>
+        已內建錯誤偵測系統，若程式卡住會自動回報原因。
     </div>
 </div>
 
 <script>
+// --- 全局錯誤攔截 (最優先執行) ---
+window.onerror = function(msg, url, line, col, error) {
+    const box = document.getElementById('rescue-console');
+    box.style.display = 'block';
+    box.innerHTML = `<h3>🚨 程式發生錯誤</h3><p>${msg}</p><p>位置: Line ${line}</p><p>請截圖此畫面回報，我們會立即修復。</p>`;
+    return false;
+};
+
 // --- 1. 資料設定 ---
 const rawData = [
-    { name: "埃奇納德(25)", cd: 24, type: "fixed", loc: "瑪魯森林", initTime: "1/8 12:00" },
-    { name: "斯吉拉(30)", cd: 24, type: "fixed", loc: "雲之高原", initTime: "1/8 14:00" },
-    { name: "蜥蜴人國王(35)", cd: 24, type: "fixed", loc: "艾拉溫溪谷", initTime: "1/8 16:00" },
-    { name: "亞爾貢(40)", cd: 24, type: "fixed", loc: "火紅荒野", initTime: "1/8 18:00" },
-    { name: "博卡頓(45)", cd: 24, type: "fixed", loc: "業報3F", initTime: "1/8 20:00" },
-    { name: "泰米爾(48)", cd: 24, type: "fixed", loc: "尼夫萊爾城", initTime: "1/8 22:00" },
+    { name: "埃奇納德(25)", cd: 24, type: "fixed", loc: "瑪魯森林", fixTime: "12:00" },
+    { name: "斯吉拉(30)", cd: 24, type: "fixed", loc: "雲之高原", fixTime: "14:00" },
+    { name: "蜥蜴人國王(35)", cd: 24, type: "fixed", loc: "艾拉溫溪谷", fixTime: "16:00" },
+    { name: "亞爾貢(40)", cd: 24, type: "fixed", loc: "火紅荒野", fixTime: "18:00" },
+    { name: "博卡頓(45)", cd: 24, type: "fixed", loc: "業報3F", fixTime: "20:00" },
+    { name: "泰米爾(48)", cd: 24, type: "fixed", loc: "尼夫萊爾城", fixTime: "22:00" },
     
     { name: "普魯特(65)", cd: 6, type: "cd", loc: "地獄3F", initTime: "1/8 10:15" },
     { name: "格里貢(55)", cd: 12, type: "cd", loc: "倒轉火紅荒野", initTime: "1/8 15:15" },
@@ -99,23 +101,15 @@ const rawData = [
     { name: "帕提洛斯(60)", cd: 6, type: "cd", loc: "倒轉卡納克峽谷", initTime: "1/8 15:23" },
     { name: "EZ-09(62)", cd: 12, type: "cd", loc: "倒轉古代遺跡", initTime: "1/8 15:29" },
     { name: "維瑟斯(72)", cd: 9, type: "cd", loc: "拉米斯森林", initTime: "1/8 18:28" },
-    // 這裡修正了武庫拉的時間
     { name: "武庫拉(50)", cd: 13.5, type: "cd", loc: "倒轉艾拉溫溪谷", initTime: "1/8 18:14" },
     { name: "布萊登(63)", cd: 18, type: "cd", loc: "業報6F", initTime: "1/9 03:15" },
     { name: "哈尼文(68)", cd: 18, type: "cd", loc: "瑪勒薩海岸", initTime: "1/8 14:45" }
 ];
 
-// 使用 v11 Key 確保讀取新預設值
-const STORAGE_KEY = 'zenonia_boss_v11_fixed';
+const STORAGE_KEY = 'zenonia_boss_v12_rescue';
 let bosses = [];
 
 // --- 2. 輔助函式 ---
-function showErr(msg) {
-    const box = document.getElementById('error-console');
-    box.style.display = 'block';
-    box.innerText += "❌ " + msg + "\n";
-}
-
 function parseInitTime(str) {
     if(!str) return null;
     try {
@@ -134,40 +128,69 @@ function parseInitTime(str) {
 // --- 3. 核心邏輯 ---
 
 function init() {
+    // 強制重置一次，避免舊資料卡住
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-            bosses = JSON.parse(saved);
-            if (bosses.length !== rawData.length) loadDefaults();
+            const savedData = JSON.parse(saved);
+            bosses = rawData.map((b, idx) => {
+                // 固定王永遠重算，不讀取存檔
+                if (b.type === 'fixed') {
+                    return { ...b, id: idx, nextSpawn: null };
+                }
+                const old = savedData.find(s => s.name === b.name);
+                let spawn = old ? old.nextSpawn : parseInitTime(b.initTime);
+                return { ...b, id: idx, nextSpawn: spawn };
+            });
         } else {
             loadDefaults();
         }
-        renderStaticList();
-        updateTimers(); 
-        setInterval(updateTimers, 1000);
+        
+        recalcFixedBosses(); // 計算固定王
+        renderStaticList();  // 畫出列表
+        updateTimers();      // 啟動倒數
+        
+        // 啟動循環
+        setInterval(() => {
+            recalcFixedBosses();
+            updateTimers();
+        }, 1000);
+        
     } catch (e) {
-        showErr("初始化錯誤: " + e.message);
+        throw new Error("初始化失敗: " + e.message); // 拋出錯誤讓 onerror 捕捉
     }
 }
 
 function loadDefaults() {
     bosses = rawData.map((b, idx) => ({
+        ...b,
         id: idx,
-        name: b.name,
-        cd: b.cd,
-        type: b.type,
-        loc: b.loc,
-        nextSpawn: parseInitTime(b.initTime)
+        nextSpawn: b.type === 'fixed' ? null : parseInitTime(b.initTime)
     }));
     saveData();
 }
 
-// 靜態渲染：只在列表順序改變時呼叫
+function recalcFixedBosses() {
+    const now = new Date();
+    bosses.forEach(boss => {
+        if (boss.type === 'fixed' && boss.fixTime) {
+            const [fh, fm] = boss.fixTime.split(':').map(Number);
+            let target = new Date();
+            target.setHours(fh, fm, 0, 0);
+            
+            // 若今天時間已過，則設為明天
+            if (now.getTime() > target.getTime()) {
+                target.setDate(target.getDate() + 1);
+            }
+            boss.nextSpawn = target.getTime();
+        }
+    });
+}
+
 function renderStaticList() {
     const list = document.getElementById('bossList');
     if(!list) return;
 
-    // 複製並排序
     const sorted = [...bosses].sort((a,b) => {
         if(!a.nextSpawn) return 1;
         if(!b.nextSpawn) return -1;
@@ -176,45 +199,46 @@ function renderStaticList() {
 
     let html = "";
     sorted.forEach(boss => {
+        let inputHtml = "";
+        if (boss.type === 'fixed') {
+            inputHtml = `<div class="auto-tag">🔄 自動循環</div>`;
+        } else {
+            inputHtml = `
+                <div class="input-row">
+                    <input type="datetime-local" id="in-${boss.id}">
+                    <button class="btn btn-update" onclick="update(${boss.id})">更新</button>
+                </div>`;
+        }
+
         html += `
             <div id="card-${boss.id}" class="boss-card">
                 <div class="boss-info">
                     <div class="boss-top-row">
                         <div class="boss-name">${boss.name}</div>
-                        <div class="boss-meta">${boss.type === 'fixed' ? '固定' : 'CD:' + boss.cd + 'h'}</div>
+                        <div class="boss-meta">${boss.type === 'fixed' ? '固定 ' + boss.fixTime : 'CD:' + boss.cd + 'h'}</div>
                     </div>
                     <div class="boss-loc">📍 ${boss.loc}</div>
                     <div id="timer-${boss.id}" class="boss-timer">-- : --</div>
                     <div id="predict-${boss.id}" class="boss-predict">預計: ---</div>
                 </div>
-                <div class="input-group">
-                    <div class="input-row">
-                        <input type="datetime-local" id="in-${boss.id}">
-                        <button class="btn btn-update" onclick="update(${boss.id})">更新</button>
-                    </div>
-                </div>
-            </div>
-        `;
+                <div class="input-group">${inputHtml}</div>
+            </div>`;
     });
     list.innerHTML = html;
-    
-    updateTimers();
 }
 
-// 動態更新：只改文字與顏色，不影響 DOM 結構
 function updateTimers() {
     const now = new Date().getTime();
-    
     bosses.forEach(boss => {
         const cardEl = document.getElementById(`card-${boss.id}`);
         const timerEl = document.getElementById(`timer-${boss.id}`);
         const predictEl = document.getElementById(`predict-${boss.id}`);
         
-        if (!cardEl || !timerEl) return;
+        if (!cardEl || !timerEl) return; // 元素還沒畫好就跳過
 
         let statusClass = "status-cd"; 
         let timerText = "-- : --";
-        let predictText = "等待輸入";
+        let predictText = "---";
         let isHighlight = false;
 
         if (boss.nextSpawn) {
@@ -232,9 +256,11 @@ function updateTimers() {
                 const ss = Math.floor((diff % 60000) / 1000);
                 timerText = `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 
-                if (diff < 600000) { // 10分內
+                if (diff < 600000) { 
                     statusClass = "status-soon"; 
                     isHighlight = true;
+                } else if (boss.type === 'fixed') {
+                    statusClass = "status-fixed";
                 }
             }
         }
@@ -242,7 +268,7 @@ function updateTimers() {
         timerEl.innerText = timerText;
         predictEl.innerText = predictText;
         
-        cardEl.classList.remove('status-active', 'status-soon', 'status-cd');
+        cardEl.classList.remove('status-active', 'status-soon', 'status-cd', 'status-fixed');
         if (statusClass) cardEl.classList.add(statusClass);
         
         if (isHighlight) timerEl.classList.add('highlight-text');
@@ -251,41 +277,31 @@ function updateTimers() {
 }
 
 function saveData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bosses));
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(bosses));
+    } catch(e) { console.error("存檔失敗", e); }
 }
 
 // --- 4. 操作函式 ---
-
 window.update = function(id) {
-    try {
-        const input = document.getElementById(`in-${id}`);
-        if(!input.value) return alert("請點選月曆圖示選擇擊殺日期與時間！");
-        
-        const killTime = new Date(input.value).getTime();
-        if(isNaN(killTime)) return alert("時間格式錯誤");
+    const input = document.getElementById(`in-${id}`);
+    if(!input || !input.value) return alert("請點選月曆圖示選擇擊殺日期與時間！");
+    
+    const killTime = new Date(input.value).getTime();
+    if(isNaN(killTime)) return alert("時間格式錯誤");
 
-        const boss = bosses.find(b => b.id === id);
+    const boss = bosses.find(b => b.id === id);
+    if (!boss) return;
+
+    if (boss.type === 'cd') {
+        const addMin = boss.cd * 60;
         let nextTime = new Date(killTime);
-
-        if(boss.type === 'fixed') {
-            const raw = rawData.find(r => r.name === boss.name);
-            const [fixH, fixM] = raw.initTime.split(' ')[1].split(':').map(Number);
-            nextTime.setHours(fixH, fixM, 0, 0);
-            if(nextTime.getTime() <= killTime) {
-                nextTime.setDate(nextTime.getDate() + 1);
-            }
-        } else {
-            const addMin = boss.cd * 60;
-            nextTime.setMinutes(nextTime.getMinutes() + addMin);
-        }
-
+        nextTime.setMinutes(nextTime.getMinutes() + addMin);
         boss.nextSpawn = nextTime.getTime();
+        
         input.value = ""; 
         saveData();
-        renderStaticList();
-
-    } catch(e) {
-        showErr("更新失敗: " + e.message);
+        renderStaticList(); // 只有手動更新時才重排列表
     }
 };
 
@@ -300,7 +316,7 @@ window.copyToDiscord = function() {
     const now = new Date().getTime();
     const list = [...bosses].filter(b => b.nextSpawn).sort((a,b) => a.nextSpawn - b.nextSpawn);
     
-    let text = "📢 **起床吃王啦**\n```diff\n";
+    let text = "📢 **月歸的吃王時間表**\n```diff\n";
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -314,8 +330,12 @@ window.copyToDiscord = function() {
     navigator.clipboard.writeText(text).then(()=>alert("已複製到剪貼簿！")).catch(()=>alert("複製失敗，請手動選取"));
 };
 
-init();
-
+// 確保 DOM 載入後執行
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 </body>
 </html>
