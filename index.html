@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>月歸的吃王時間表</title>
+    <title>月歸吃王時間表</title>
     <style>
         /* --- 樣式設定 --- */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #202225; color: #dcddde; margin: 0; padding: 20px; }
@@ -13,9 +13,16 @@
         h2 { color: #f04747; margin: 0; font-size: 1.6rem; display: flex; align-items: center; gap: 10px; text-shadow: 1px 1px 2px black;}
         
         .btn { border: none; padding: 10px 18px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; font-size: 0.9rem;}
-        .btn-copy { background-color: #43b581; }
+        .btn-copy { background-color: #43b581; } 
         .btn-copy:hover { background-color: #3ca374; }
         .btn-reset { background-color: #ed4245; font-size: 0.8rem;}
+        
+        /* 新增：Discord 發送按鈕 */
+        .btn-discord { background-color: #5865F2; display: flex; align-items: center; gap: 5px; }
+        .btn-discord:hover { background-color: #4752c4; }
+
+        .webhook-area { background: #2f3136; padding: 10px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #5865F2; display: flex; gap: 10px; align-items: center;}
+        .webhook-input { background: #40444b; border: 1px solid #202225; color: white; padding: 8px; border-radius: 4px; flex-grow: 1; font-family: monospace;}
         
         .boss-card { background-color: #2f3136; padding: 12px 18px; margin-bottom: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-left: 6px solid #72767d; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background-color 0.3s, border-color 0.3s; }
         
@@ -57,32 +64,38 @@
 
     <div class="header-area">
         <h2>⚔️月歸的吃王時間表⚔️</h2>
-        <button class="btn btn-reset" onclick="hardReset()">⚠️ 重置回預設值</button>
-        <button class="btn btn-copy" onclick="copyToDiscord()">📋 複製到 Discord</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-reset" onclick="hardReset()">⚠️ 重置</button>
+            <button class="btn btn-copy" onclick="copyToClipboard()">📋 複製文字</button>
+            <button class="btn btn-discord" onclick="sendToDiscord()">🚀 發送到 Discord</button>
+        </div>
+    </div>
+    
+    <div class="webhook-area">
+        <span style="font-size:0.9rem; color:#bbb;">Webhook 網址:</span>
+        <input type="password" id="webhook-url" class="webhook-input" placeholder="請貼上 Discord Webhook URL (https://discord.com/api/webhooks/...)">
+        <button class="btn btn-copy" onclick="saveWebhook()" style="padding: 5px 10px; font-size: 0.8rem;">💾 儲存</button>
     </div>
 
     <div id="bossList">
-        <div style="text-align:center; padding: 50px; color: #aaa;">
-            正在啟動系統...
-        </div>
+        <div style="text-align:center; padding: 50px; color: #aaa;">正在啟動系統...</div>
     </div>
 
     <div class="tip">
-        <strong>v12.2 更新：</strong><br>
-        複製功能已新增工具網址，方便盟友直接點擊使用。
+        <strong>v13.0 更新：</strong><br>
+        新增 Discord Webhook 功能。填入網址並儲存後，點擊「🚀 發送到 Discord」即可直接將時間表推送到頻道。
     </div>
 </div>
 
 <script>
-// --- 全局錯誤攔截 ---
 window.onerror = function(msg, url, line, col, error) {
     const box = document.getElementById('rescue-console');
     box.style.display = 'block';
-    box.innerHTML = `<h3>🚨 程式發生錯誤</h3><p>${msg}</p><p>位置: Line ${line}</p><p>請截圖此畫面回報，我們會立即修復。</p>`;
+    box.innerHTML = `<h3>🚨 程式發生錯誤</h3><p>${msg}</p><p>位置: Line ${line}</p>`;
     return false;
 };
 
-// --- 1. 資料設定 ---
+// --- 資料設定 ---
 const rawData = [
     { name: "埃奇納德(25)", cd: 24, type: "fixed", loc: "瑪魯森林", fixTime: "12:00" },
     { name: "斯吉拉(30)", cd: 24, type: "fixed", loc: "雲之高原", fixTime: "14:00" },
@@ -91,7 +104,7 @@ const rawData = [
     { name: "博卡頓(45)", cd: 24, type: "fixed", loc: "業報3F", fixTime: "20:00" },
     { name: "泰米爾(48)", cd: 24, type: "fixed", loc: "尼夫萊爾城", fixTime: "22:00" },
     
-    { name: "普魯特(65)", cd: 6, type: "cd", loc: "地獄3F", initTime: "1/8 16:36" },
+    { name: "普魯特(65)", cd: 6, type: "cd", loc: "地獄3F", initTime: "1/8 10:15" },
     { name: "格里貢(55)", cd: 12, type: "cd", loc: "倒轉火紅荒野", initTime: "1/8 15:15" },
     { name: "佩爾(77)", cd: 24, type: "cd", loc: "罪惡3F", initTime: "1/8 15:15" },
     { name: "亞拉金(78)", cd: 24, type: "cd", loc: "雷歐城", initTime: "1/8 15:19" }, 
@@ -104,10 +117,9 @@ const rawData = [
     { name: "哈尼文(68)", cd: 18, type: "cd", loc: "瑪勒薩海岸", initTime: "1/8 14:45" }
 ];
 
-const STORAGE_KEY = 'zenonia_boss_v12_rescue';
+const STORAGE_KEY = 'zenonia_boss_v13_webhook';
 let bosses = [];
 
-// --- 2. 輔助函式 ---
 function parseInitTime(str) {
     if(!str) return null;
     try {
@@ -123,16 +135,17 @@ function parseInitTime(str) {
     } catch(e) { return null; }
 }
 
-// --- 3. 核心邏輯 ---
 function init() {
+    // 載入 Webhook
+    const hook = localStorage.getItem('zenonia_webhook_url');
+    if(hook) document.getElementById('webhook-url').value = hook;
+
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             const savedData = JSON.parse(saved);
             bosses = rawData.map((b, idx) => {
-                if (b.type === 'fixed') {
-                    return { ...b, id: idx, nextSpawn: null };
-                }
+                if (b.type === 'fixed') return { ...b, id: idx, nextSpawn: null };
                 const old = savedData.find(s => s.name === b.name);
                 let spawn = old ? old.nextSpawn : parseInitTime(b.initTime);
                 return { ...b, id: idx, nextSpawn: spawn };
@@ -225,7 +238,6 @@ function updateTimers() {
         const cardEl = document.getElementById(`card-${boss.id}`);
         const timerEl = document.getElementById(`timer-${boss.id}`);
         const predictEl = document.getElementById(`predict-${boss.id}`);
-        
         if (!cardEl || !timerEl) return;
 
         let statusClass = "status-cd"; 
@@ -240,7 +252,7 @@ function updateTimers() {
 
             if (diff <= 0) {
                 statusClass = "status-active"; 
-                timerText = "🔥 已出現";
+                timerText = "🔥已出現";
                 isHighlight = true;
             } else {
                 const hh = Math.floor(diff / 3600000);
@@ -262,19 +274,23 @@ function updateTimers() {
         
         cardEl.classList.remove('status-active', 'status-soon', 'status-cd', 'status-fixed');
         if (statusClass) cardEl.classList.add(statusClass);
-        
         if (isHighlight) timerEl.classList.add('highlight-text');
         else timerEl.classList.remove('highlight-text');
     });
 }
 
 function saveData() {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(bosses));
-    } catch(e) { console.error("存檔失敗", e); }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bosses));
 }
 
-// --- 4. 操作函式 ---
+function saveWebhook() {
+    const url = document.getElementById('webhook-url').value.trim();
+    if(url) {
+        localStorage.setItem('zenonia_webhook_url', url);
+        alert("Webhook 網址已儲存！");
+    }
+}
+
 window.update = function(id) {
     const input = document.getElementById(`in-${id}`);
     if(!input || !input.value) return alert("請點選月曆圖示選擇擊殺日期與時間！");
@@ -290,7 +306,6 @@ window.update = function(id) {
         let nextTime = new Date(killTime);
         nextTime.setMinutes(nextTime.getMinutes() + addMin);
         boss.nextSpawn = nextTime.getTime();
-        
         input.value = ""; 
         saveData();
         renderStaticList();
@@ -304,15 +319,52 @@ window.hardReset = function() {
     }
 };
 
-// [修改重點]：在複製文字的最上方加入工具網址
-window.copyToDiscord = function() {
-    const now = new Date().getTime();
-    const list = [...bosses].filter(b => b.nextSpawn).sort((a,b) => a.nextSpawn - b.nextSpawn);
+window.copyToClipboard = function() {
+    const list = getSortedList();
+    const text = formatListText(list);
+    navigator.clipboard.writeText(text).then(()=>alert("已複製文字！")).catch(()=>alert("複製失敗"));
+};
+
+// [新功能] 發送 Webhook
+window.sendToDiscord = function() {
+    const url = document.getElementById('webhook-url').value.trim();
+    if (!url) return alert("請先填入 Webhook 網址並儲存！");
     
-    // 這裡加上了網址，且放在代碼區塊外
-    let text = "📢 **起床吃王了**\n";
-    text += "🔗 傳送門 https://willa0916.github.io/zenonia-boss/\n\n";
-    text += "```diff\n";
+    const list = getSortedList();
+    const description = formatListText(list, false); // 不含代碼塊，用於 embed
+    
+    // 構建 Discord 訊息格式 (Embed)
+    const payload = {
+        username: "月歸俏秘書",
+        embeds: [{
+            title: "📢起床吃王啦",
+            description: description + "\n\n🔗 [工具傳送門](https://willa0916.github.io/zenonia-boss/)",
+            color: 5814783, // 藍色
+            footer: { text: "資料更新時間: " + new Date().toLocaleTimeString() }
+        }]
+    };
+
+    fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    }).then(res => {
+        if(res.ok) alert("✅ 已成功發送到 Discord！");
+        else alert("❌ 發送失敗，請檢查 Webhook 網址是否正確。");
+    }).catch(err => alert("❌ 發送錯誤: " + err));
+};
+
+function getSortedList() {
+    const now = new Date().getTime();
+    return [...bosses].filter(b => b.nextSpawn).sort((a,b) => a.nextSpawn - b.nextSpawn);
+}
+
+function formatListText(list, isCodeBlock = true) {
+    const now = new Date().getTime();
+    let text = "";
+    if(isCodeBlock) {
+        text += "📢 **吃王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
+    }
     
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
@@ -321,12 +373,22 @@ window.copyToDiscord = function() {
         let icon = "-";
         if (diff <= 0) icon = "+";
         else if (diff < 600000) icon = "!";
-        text += `${icon} ${b.name} (${b.loc})\n      時間: ${tStr}\n`;
+        
+        if (isCodeBlock) {
+            text += `${icon} ${b.name} (${b.loc})\n      時間: ${tStr}\n`;
+        } else {
+            // Discord Embed 格式
+            let statusEmoji = "⏳";
+            if(diff <= 0) statusEmoji = "🔥**已出現**";
+            else if(diff < 600000) statusEmoji = "⚠️**即將出現**";
+            
+            text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
+        }
     });
-    text += "```";
-    
-    navigator.clipboard.writeText(text).then(()=>alert("已複製到剪貼簿！")).catch(()=>alert("複製失敗，請手動選取"));
-};
+
+    if(isCodeBlock) text += "```";
+    return text;
+}
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
