@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>月歸吃王時間表</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    
     <style>
         /* --- 樣式設定 --- */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #202225; color: #dcddde; margin: 0; padding: 20px; }
@@ -43,20 +46,19 @@
         .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 240px; justify-content: center;}
         .input-row { display: flex; gap: 5px; width: 100%; justify-content: flex-end;}
         
-        /* 恢復 datetime-local 樣式 */
-        input[type="datetime-local"] { 
+        /* 使用 flatpickr 的 input */
+        input.flatpickr-input { 
             background: #40444b; 
             border: 1px solid #202225; 
             color: white; 
             padding: 8px; 
             border-radius: 4px; 
-            font-family: sans-serif; 
+            font-family: monospace; 
             font-size: 0.95rem; 
             cursor: pointer; 
-            width: 100%; 
-            color-scheme: dark; /* 強制瀏覽器使用深色/24h風格 (如果支援) */
+            width: 140px; 
+            text-align: center;
         }
-        input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
         .btn-update { background-color: #5865F2; padding: 8px 15px; width: 80px;}
         .btn-update:hover { background-color: #4752c4; }
@@ -74,7 +76,7 @@
     <div id="rescue-console"></div>
 
     <div class="header-area">
-        <h2>⚔️月歸吃王時間表⚔️</h2>
+        <h2>⚔️月歸的吃王時間表⚔️</h2>
         <div style="display:flex; gap:10px;">
             <button class="btn btn-reset" onclick="hardReset()">⚠️ 重置</button>
             <button class="btn btn-copy" onclick="copyToClipboard()">📋 複製文字</button>
@@ -93,10 +95,13 @@
     </div>
 
     <div class="tip">
-        <strong>v15.0 更新：</strong><br>
-        已恢復「月曆/時鐘選單」以確保跨日準確性，並維持所有自動化與 Discord 功能。
+        <strong>v16.0 更新：</strong><br>
+        已更換為「強制 24 小時制」的專業日曆插件，無論電腦設定為何，皆顯示 24H 格式。
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
 
 <script>
 window.onerror = function(msg, url, line, col, error) {
@@ -128,7 +133,7 @@ const rawData = [
     { name: "哈尼文(68)", cd: 18, type: "cd", loc: "瑪勒薩海岸", initTime: "1/8 14:45" }
 ];
 
-const STORAGE_KEY = 'zenonia_boss_v15_final';
+const STORAGE_KEY = 'zenonia_boss_v16_flatpickr';
 let bosses = [];
 
 function parseInitTime(str) {
@@ -218,10 +223,10 @@ function renderStaticList() {
         if (boss.type === 'fixed') {
             inputHtml = `<div class="auto-tag">🔄 自動循環</div>`;
         } else {
-            // 回復為 datetime-local
+            // 使用 class="datepicker" 讓 JS 去初始化它
             inputHtml = `
                 <div class="input-row">
-                    <input type="datetime-local" id="in-${boss.id}">
+                    <input type="text" id="in-${boss.id}" class="datepicker" placeholder="點擊選擇時間">
                     <button class="btn btn-update" onclick="update(${boss.id})">更新</button>
                 </div>`;
         }
@@ -241,6 +246,17 @@ function renderStaticList() {
             </div>`;
     });
     list.innerHTML = html;
+
+    // 初始化 Flatpickr 日曆插件
+    flatpickr(".datepicker", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true, // 強制 24 小時制
+        locale: "zh_tw", // 中文介面
+        defaultDate: new Date(), // 預設顯示現在時間
+        minuteIncrement: 1, // 分鐘微調單位
+        disableMobile: "true" // 手機上也強制使用這個插件，不跳出原生日曆
+    });
 }
 
 function updateTimers() {
@@ -304,9 +320,9 @@ function saveWebhook() {
 
 window.update = function(id) {
     const input = document.getElementById(`in-${id}`);
-    if(!input || !input.value) return alert("請選擇日期與時間！");
+    if(!input || !input.value) return alert("請點擊選擇時間！");
     
-    // datetime-local 傳回的是 ISO 格式 (YYYY-MM-DDTHH:mm)，原生就是 24 小時制
+    // Flatpickr 產生的格式是 YYYY-MM-DD HH:mm，可以直接給 Date 吃
     const killTime = new Date(input.value).getTime();
     if(isNaN(killTime)) return alert("時間格式錯誤");
 
@@ -318,7 +334,8 @@ window.update = function(id) {
         let nextTime = new Date(killTime);
         nextTime.setMinutes(nextTime.getMinutes() + addMin);
         boss.nextSpawn = nextTime.getTime();
-        input.value = ""; 
+        
+        // input.value 不清空，方便連續查看
         saveData();
         renderStaticList();
     }
@@ -373,12 +390,11 @@ function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
     let text = "";
     if(isCodeBlock) {
-        text += "📢 **時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
+        text += "📢 **吃王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
     }
     
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
-        // 強制格式化為 24 小時制
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         const diff = b.nextSpawn - now;
         let icon = "-";
