@@ -316,7 +316,7 @@ window.copyToDiscord = function() {
     const now = new Date().getTime();
     const list = [...bosses].filter(b => b.nextSpawn).sort((a,b) => a.nextSpawn - b.nextSpawn);
     
-    let text = "📢 **月歸的吃王時間表**\n```diff\n";
+    let text = "📢 **月歸的吃王時間表**\n https://willa0916.github.io/zenonia-boss/ \n ```diff\n";
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
