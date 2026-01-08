@@ -17,7 +17,6 @@
         .btn-copy:hover { background-color: #3ca374; }
         .btn-reset { background-color: #ed4245; font-size: 0.8rem;}
         
-        /* 新增：Discord 發送按鈕 */
         .btn-discord { background-color: #5865F2; display: flex; align-items: center; gap: 5px; }
         .btn-discord:hover { background-color: #4752c4; }
 
@@ -44,7 +43,19 @@
         .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 240px; justify-content: center;}
         .input-row { display: flex; gap: 5px; width: 100%; justify-content: flex-end;}
         
-        input[type="datetime-local"] { background: #40444b; border: 1px solid #202225; color: white; padding: 8px; border-radius: 4px; font-family: sans-serif; font-size: 0.95rem; cursor: pointer; width: 100%; }
+        /* 恢復 datetime-local 樣式 */
+        input[type="datetime-local"] { 
+            background: #40444b; 
+            border: 1px solid #202225; 
+            color: white; 
+            padding: 8px; 
+            border-radius: 4px; 
+            font-family: sans-serif; 
+            font-size: 0.95rem; 
+            cursor: pointer; 
+            width: 100%; 
+            color-scheme: dark; /* 強制瀏覽器使用深色/24h風格 (如果支援) */
+        }
         input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
         .btn-update { background-color: #5865F2; padding: 8px 15px; width: 80px;}
@@ -63,7 +74,7 @@
     <div id="rescue-console"></div>
 
     <div class="header-area">
-        <h2>⚔️月歸的吃王時間表⚔️</h2>
+        <h2>⚔️月歸吃王時間表⚔️</h2>
         <div style="display:flex; gap:10px;">
             <button class="btn btn-reset" onclick="hardReset()">⚠️ 重置</button>
             <button class="btn btn-copy" onclick="copyToClipboard()">📋 複製文字</button>
@@ -73,7 +84,7 @@
     
     <div class="webhook-area">
         <span style="font-size:0.9rem; color:#bbb;">Webhook 網址:</span>
-        <input type="password" id="webhook-url" class="webhook-input" placeholder="請貼上 Discord Webhook URL (https://discord.com/api/webhooks/...)">
+        <input type="password" id="webhook-url" class="webhook-input" placeholder="請貼上 Discord Webhook URL">
         <button class="btn btn-copy" onclick="saveWebhook()" style="padding: 5px 10px; font-size: 0.8rem;">💾 儲存</button>
     </div>
 
@@ -82,8 +93,8 @@
     </div>
 
     <div class="tip">
-        <strong>v13.0 更新：</strong><br>
-        新增 Discord Webhook 功能。填入網址並儲存後，點擊「🚀 發送到 Discord」即可直接將時間表推送到頻道。
+        <strong>v15.0 更新：</strong><br>
+        已恢復「月曆/時鐘選單」以確保跨日準確性，並維持所有自動化與 Discord 功能。
     </div>
 </div>
 
@@ -117,7 +128,7 @@ const rawData = [
     { name: "哈尼文(68)", cd: 18, type: "cd", loc: "瑪勒薩海岸", initTime: "1/8 14:45" }
 ];
 
-const STORAGE_KEY = 'zenonia_boss_v13_webhook';
+const STORAGE_KEY = 'zenonia_boss_v15_final';
 let bosses = [];
 
 function parseInitTime(str) {
@@ -136,7 +147,6 @@ function parseInitTime(str) {
 }
 
 function init() {
-    // 載入 Webhook
     const hook = localStorage.getItem('zenonia_webhook_url');
     if(hook) document.getElementById('webhook-url').value = hook;
 
@@ -208,6 +218,7 @@ function renderStaticList() {
         if (boss.type === 'fixed') {
             inputHtml = `<div class="auto-tag">🔄 自動循環</div>`;
         } else {
+            // 回復為 datetime-local
             inputHtml = `
                 <div class="input-row">
                     <input type="datetime-local" id="in-${boss.id}">
@@ -252,7 +263,7 @@ function updateTimers() {
 
             if (diff <= 0) {
                 statusClass = "status-active"; 
-                timerText = "🔥已出現";
+                timerText = "🔥 已出現";
                 isHighlight = true;
             } else {
                 const hh = Math.floor(diff / 3600000);
@@ -293,8 +304,9 @@ function saveWebhook() {
 
 window.update = function(id) {
     const input = document.getElementById(`in-${id}`);
-    if(!input || !input.value) return alert("請點選月曆圖示選擇擊殺日期與時間！");
+    if(!input || !input.value) return alert("請選擇日期與時間！");
     
+    // datetime-local 傳回的是 ISO 格式 (YYYY-MM-DDTHH:mm)，原生就是 24 小時制
     const killTime = new Date(input.value).getTime();
     if(isNaN(killTime)) return alert("時間格式錯誤");
 
@@ -325,22 +337,20 @@ window.copyToClipboard = function() {
     navigator.clipboard.writeText(text).then(()=>alert("已複製文字！")).catch(()=>alert("複製失敗"));
 };
 
-// [新功能] 發送 Webhook
 window.sendToDiscord = function() {
     const url = document.getElementById('webhook-url').value.trim();
     if (!url) return alert("請先填入 Webhook 網址並儲存！");
     
     const list = getSortedList();
-    const description = formatListText(list, false); // 不含代碼塊，用於 embed
+    const description = formatListText(list, false);
     
-    // 構建 Discord 訊息格式 (Embed)
     const payload = {
         username: "月歸俏秘書",
         embeds: [{
             title: "📢起床吃王啦",
-            description: description + "\n\n🔗 [工具傳送門](https://willa0916.github.io/zenonia-boss/)",
-            color: 5814783, // 藍色
-            footer: { text: "資料更新時間: " + new Date().toLocaleTimeString() }
+            description: description + "\n\n🔗 [開啟工具網頁](https://willa0916.github.io/zenonia-boss/)",
+            color: 5814783, 
+            footer: { text: "更新時間: " + new Date().toLocaleTimeString('zh-TW', { hour12: false }) }
         }]
     };
 
@@ -349,9 +359,9 @@ window.sendToDiscord = function() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     }).then(res => {
-        if(res.ok) alert("✅ 已成功發送到 Discord！");
-        else alert("❌ 發送失敗，請檢查 Webhook 網址是否正確。");
-    }).catch(err => alert("❌ 發送錯誤: " + err));
+        if(res.ok) alert("✅ 已發送到 Discord！");
+        else alert("❌ 發送失敗，請檢查網址。");
+    }).catch(err => alert("❌ 錯誤: " + err));
 };
 
 function getSortedList() {
@@ -363,11 +373,12 @@ function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
     let text = "";
     if(isCodeBlock) {
-        text += "📢 **吃王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
+        text += "📢 **時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
     }
     
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
+        // 強制格式化為 24 小時制
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         const diff = b.nextSpawn - now;
         let icon = "-";
@@ -377,11 +388,9 @@ function formatListText(list, isCodeBlock = true) {
         if (isCodeBlock) {
             text += `${icon} ${b.name} (${b.loc})\n      時間: ${tStr}\n`;
         } else {
-            // Discord Embed 格式
             let statusEmoji = "⏳";
-            if(diff <= 0) statusEmoji = "🔥**已出現**";
-            else if(diff < 600000) statusEmoji = "⚠️**即將出現**";
-            
+            if(diff <= 0) statusEmoji = "🔥 **已出現**";
+            else if(diff < 600000) statusEmoji = "⚠️ **即將出現**";
             text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
         }
     });
