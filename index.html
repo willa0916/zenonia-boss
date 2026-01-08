@@ -23,7 +23,6 @@
         .btn-discord { background-color: #5865F2; }
         .btn-discord:hover { background-color: #4752c4; }
         
-        /* 連線狀態燈號 */
         .status-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .online { background-color: #43b581; box-shadow: 0 0 5px #43b581; }
         .offline { background-color: #ed4245; }
@@ -90,9 +89,8 @@
     </div>
 
     <div class="tip">
-        <strong>v18.0 雲端同步版：</strong><br>
-        所有操作都會即時同步給所有開啟網頁的盟友。<br>
-        左上角燈號：<span style="color:#43b581">綠燈=連線中</span>，<span style="color:#ed4245">紅燈=斷線(請檢查網路或設定)</span>
+        <strong>v18.1 排序修復版：</strong><br>
+        已修正資料同步時的排序錯誤，現在會正確按照「實際重生時間」排列。
     </div>
 </div>
 
@@ -102,7 +100,6 @@
 <script>
 // ==========================================
 // 【請在這裡填入您的 Firebase 設定】
-// 複製貼上時，請保留引號和逗號
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyAD48KJ3oobOE3IQX7o9WhF1eRC-Zd2J24",
@@ -184,32 +181,31 @@ function parseInitTime(str) {
     } catch(e) { return null; }
 }
 
-// 初始化：改為監聽 Firebase
+// 初始化
 function init() {
-    // Webhook 仍存本地
     const hook = localStorage.getItem('zenonia_webhook_url');
     if(hook) document.getElementById('webhook-url').value = hook;
 
-    // 監聽雲端資料變更
     db.ref('bosses').on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) {
             bosses = val;
         } else {
-            // 如果雲端是空的(第一次用)，載入預設值並上傳
             loadDefaults();
         }
         
-        // 資料來了就更新畫面
+        // [關鍵修復]：收到資料後，先校正固定王的時間 (把過去時間修成未來時間)
+        recalcFixedBosses();
+        
+        // 校正後再渲染，這樣排序就會正確了
         renderStaticList();
         updateTimers();
     }, (error) => {
         window.onerror("讀取資料失敗: " + error.message, "", 0);
     });
 
-    // 啟動每一秒的倒數計時
     setInterval(() => {
-        recalcFixedBosses(); // 固定王還是要本地算一下
+        recalcFixedBosses();
         updateTimers();
     }, 1000);
 }
@@ -220,9 +216,10 @@ function loadDefaults() {
         id: idx,
         nextSpawn: b.type === 'fixed' ? null : parseInitTime(b.initTime)
     }));
-    saveData(); // 寫入雲端
+    saveData();
 }
 
+// [關鍵功能] 校正固定王時間
 function recalcFixedBosses() {
     const now = new Date();
     bosses.forEach(boss => {
@@ -233,21 +230,17 @@ function recalcFixedBosses() {
             if (now.getTime() > target.getTime()) {
                 target.setDate(target.getDate() + 1);
             }
+            // 這裡只更新記憶體中的數值，不回寫資料庫，以免頻繁寫入
             boss.nextSpawn = target.getTime();
         }
     });
 }
 
-// 畫面渲染：與之前相同，但移除 onchange 儲存，改為 submit 儲存
 function renderStaticList() {
     const list = document.getElementById('bossList');
     if(!list) return;
 
-    // 這裡為了保持 DOM 穩定，如果已經有列表就不重畫，只更新數值？
-    // 但為了排序，我們還是重畫，flatpickr 需重綁
-    // 為了避免輸入中斷，我們檢查是否正在輸入...
-    // 簡單解法：排序不變就不重畫。這裡先簡化：直接重畫。
-    
+    // 此時的 bosses 已經經過 recalcFixedBosses 校正，排序會是正確的
     const sorted = [...bosses].sort((a,b) => {
         if(!a.nextSpawn) return 1;
         if(!b.nextSpawn) return -1;
@@ -293,7 +286,6 @@ function renderStaticList() {
         disableMobile: "true"
     });
     
-    // 綁定好後馬上更新一次倒數文字
     updateTimers();
 }
 
@@ -344,7 +336,6 @@ function updateTimers() {
     });
 }
 
-// 儲存至 Firebase
 function saveData() {
     db.ref('bosses').set(bosses).catch(e => alert("同步失敗：" + e.message));
 }
@@ -363,10 +354,8 @@ window.update = function(id) {
     const killTime = new Date(input.value).getTime();
     if(isNaN(killTime)) return alert("時間格式錯誤");
     
-    // 修改陣列
     const bossIndex = bosses.findIndex(b => b.id === id);
     if (bossIndex === -1) return;
-    
     const boss = bosses[bossIndex];
 
     if (boss.type === 'cd') {
@@ -374,15 +363,13 @@ window.update = function(id) {
         let nextTime = new Date(killTime);
         nextTime.setMinutes(nextTime.getMinutes() + addMin);
         boss.nextSpawn = nextTime.getTime();
-        
-        // 【關鍵】寫入雲端，Firebase 會自動通知所有人的瀏覽器更新
         saveData();
     }
 };
 
 window.hardReset = function() {
     if(confirm("確定要重置「雲端」所有數據回預設值嗎？這會影響所有人！")) {
-        loadDefaults(); // 這會觸發 saveData 覆蓋雲端
+        loadDefaults();
     }
 };
 
@@ -423,7 +410,7 @@ function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
     let text = "";
     if(isCodeBlock) {
-        text += "📢 **時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
+        text += "📢 **月歸的吃王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
     }
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
@@ -446,7 +433,6 @@ function formatListText(list, isCodeBlock = true) {
     return text;
 }
 
-// 啟動
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
