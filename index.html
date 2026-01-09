@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>月歸吃王時間表</title>
+    <title>月歸打王時間表</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -48,7 +48,7 @@
         .boss-timer { font-size: 1.4rem; font-weight: bold; color: #dcddde; margin-top: 5px; font-family: 'Consolas', monospace; letter-spacing: 1px;}
         .highlight-text { color: #f1c40f; text-shadow: 0 0 5px rgba(241, 196, 15, 0.5); }
         
-        /* [修改] 出現時間更顯眼 */
+        /* 出現時間更顯眼 */
         .boss-predict { font-size: 1rem; color: #43b581; margin-top: 5px; font-weight: bold; }
 
         .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 260px; justify-content: center;}
@@ -56,7 +56,7 @@
         
         input.flatpickr-input { background: #40444b; border: 1px solid #202225; color: white; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.95rem; cursor: pointer; width: 140px; text-align: center; }
 
-        /* [修改] 按鈕寬度自適應，以容納更多文字 */
+        /* 按鈕寬度自適應 */
         .btn-update { background-color: #5865F2; padding: 8px 12px; width: auto; min-width: 80px;}
         .btn-update:hover { background-color: #4752c4; }
 
@@ -74,7 +74,7 @@
     <div class="header-area">
         <h2>
             <span id="conn-status" class="status-dot"></span>
-            ⚔️月歸的吃王時間表⚔️
+            ⚔️月歸打王時間表⚔️
         </h2>
         <div style="display:flex; gap:10px; flex-wrap: wrap;">
             <button class="btn btn-reset" onclick="hardReset()">⚠️ 強制重置</button>
@@ -94,8 +94,8 @@
     </div>
 
     <div class="tip">
-        <strong>v19.0 更新：</strong><br>
-        輸入框預設為空白以防誤觸；按鈕文字與倒數顯示已優化。
+        <strong>v20.0 更新：</strong><br>
+        已修正固定時間 BOSS 的排序問題，過期的 BOSS 會正確顯示在列表下方。
     </div>
 </div>
 
@@ -197,6 +197,10 @@ function init() {
         } else {
             loadDefaults();
         }
+        
+        // [修正] 在渲染之前，先強制計算一次固定王的最新時間
+        recalcFixedBosses();
+        
         renderStaticList();
         updateTimers();
     }, (error) => {
@@ -218,6 +222,7 @@ function loadDefaults() {
     saveData();
 }
 
+// 計算固定王時間：如果時間已過，自動推至明天
 function recalcFixedBosses() {
     const now = new Date();
     bosses.forEach(boss => {
@@ -225,9 +230,13 @@ function recalcFixedBosses() {
             const [fh, fm] = boss.fixTime.split(':').map(Number);
             let target = new Date();
             target.setHours(fh, fm, 0, 0);
+            
+            // 核心邏輯：如果現在已經超過了固定時間，就將目標設為明天
             if (now.getTime() > target.getTime()) {
                 target.setDate(target.getDate() + 1);
             }
+            
+            // 更新 boss 物件的下次重生時間
             boss.nextSpawn = target.getTime();
         }
     });
@@ -237,6 +246,7 @@ function renderStaticList() {
     const list = document.getElementById('bossList');
     if(!list) return;
 
+    // 排序：根據 nextSpawn 小到大排序 (時間近的在前，遠的在後)
     const sorted = [...bosses].sort((a,b) => {
         if(!a.nextSpawn) return 1;
         if(!b.nextSpawn) return -1;
@@ -249,7 +259,6 @@ function renderStaticList() {
         if (boss.type === 'fixed') {
             inputHtml = `<div class="auto-tag">🔄 自動循環</div>`;
         } else {
-            // [修改] 按鈕文字改為 "更新擊殺時間"
             inputHtml = `
                 <div class="input-row">
                     <input type="text" id="in-${boss.id}" class="datepicker" placeholder="點擊選擇時間">
@@ -273,13 +282,11 @@ function renderStaticList() {
     });
     list.innerHTML = html;
 
-    // [修改] 移除 defaultDate，讓預設值為空白
     flatpickr(".datepicker", {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
         time_24hr: true,
         locale: "zh_tw",
-        // defaultDate: new Date(),  <-- 這行已移除，確保重新整理時是空白
         minuteIncrement: 1,
         disableMobile: "true"
     });
@@ -304,10 +311,11 @@ function updateTimers() {
             const diff = boss.nextSpawn - now;
             const d = new Date(boss.nextSpawn);
             
-            // [修改] 文案改為 "出現時間"
             predictText = `出現時間: ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
             if (diff <= 0) {
+                // 對於固定王，如果計算正確，理論上不會進入這裡(因為recalc會推到明天)
+                // 除非剛好在 0 秒瞬間
                 statusClass = "status-active"; 
                 timerText = "🔥 已出現";
                 isHighlight = true;
@@ -315,7 +323,6 @@ function updateTimers() {
                 const hh = Math.floor(diff / 3600000);
                 const mm = Math.floor((diff % 3600000) / 60000);
                 const ss = Math.floor((diff % 60000) / 1000);
-                // [修改] 加上 "倒數" 前綴
                 timerText = `倒數 ${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 
                 if (diff < 600000) { 
@@ -352,7 +359,6 @@ function saveWebhook() {
 window.update = function(id) {
     const input = document.getElementById(`in-${id}`);
     
-    // [修改] 增加防呆，如果空白則警告
     if(!input || !input.value) return alert("請先點擊選擇擊殺時間，再按下更新！");
     
     const killTime = new Date(input.value).getTime();
@@ -369,8 +375,6 @@ window.update = function(id) {
         nextTime.setMinutes(nextTime.getMinutes() + addMin);
         boss.nextSpawn = nextTime.getTime();
         saveData();
-        
-        // 更新成功後，清空輸入框，避免下次誤觸
         input.value = "";
     }
 };
@@ -397,7 +401,7 @@ window.sendToDiscord = function() {
     const payload = {
         username: "月歸俏秘書",
         embeds: [{
-            title: "📢起床吃王啦",
+            title: "📢 起床打王啦",
             description: description + "\n\n🔗 [開啟工具網頁](https://willa0916.github.io/zenonia-boss/)",
             color: 5814783, 
             footer: { text: "更新時間: " + new Date().toLocaleTimeString('zh-TW', { hour12: false }) }
@@ -418,7 +422,7 @@ function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
     let text = "";
     if(isCodeBlock) {
-        text += "📢 **吃王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
+        text += "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
     }
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
@@ -437,16 +441,4 @@ function formatListText(list, isCodeBlock = true) {
             text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
         }
     });
-    if(isCodeBlock) text += "```";
-    return text;
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
-</script>
-</body>
-</html>
-
+    if(isCode
