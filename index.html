@@ -23,6 +23,7 @@
         .btn-discord { background-color: #5865F2; }
         .btn-discord:hover { background-color: #4752c4; }
         
+        /* 連線狀態燈號 */
         .status-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .online { background-color: #43b581; box-shadow: 0 0 5px #43b581; }
         .offline { background-color: #ed4245; }
@@ -43,16 +44,20 @@
         .boss-meta { font-size: 0.75rem; background: #4f545c; padding: 3px 8px; border-radius: 10px; color: #eee; }
         .boss-loc { font-size: 0.9rem; color: #b9bbbe; }
         
+        /* 計時器樣式 */
         .boss-timer { font-size: 1.4rem; font-weight: bold; color: #dcddde; margin-top: 5px; font-family: 'Consolas', monospace; letter-spacing: 1px;}
         .highlight-text { color: #f1c40f; text-shadow: 0 0 5px rgba(241, 196, 15, 0.5); }
-        .boss-predict { font-size: 0.9rem; color: #888; margin-top: 2px; }
+        
+        /* [修改] 出現時間更顯眼 */
+        .boss-predict { font-size: 1rem; color: #43b581; margin-top: 5px; font-weight: bold; }
 
-        .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 240px; justify-content: center;}
+        .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 260px; justify-content: center;}
         .input-row { display: flex; gap: 5px; width: 100%; justify-content: flex-end;}
         
         input.flatpickr-input { background: #40444b; border: 1px solid #202225; color: white; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.95rem; cursor: pointer; width: 140px; text-align: center; }
 
-        .btn-update { background-color: #5865F2; padding: 8px 15px; width: 80px;}
+        /* [修改] 按鈕寬度自適應，以容納更多文字 */
+        .btn-update { background-color: #5865F2; padding: 8px 12px; width: auto; min-width: 80px;}
         .btn-update:hover { background-color: #4752c4; }
 
         .auto-tag { background-color: #2f3136; border: 1px solid #9b59b6; color: #9b59b6; padding: 8px 15px; border-radius: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
@@ -69,7 +74,7 @@
     <div class="header-area">
         <h2>
             <span id="conn-status" class="status-dot"></span>
-            ⚔️月歸吃王時間表⚔️
+            ⚔️月歸的吃王時間表⚔️
         </h2>
         <div style="display:flex; gap:10px; flex-wrap: wrap;">
             <button class="btn btn-reset" onclick="hardReset()">⚠️ 強制重置</button>
@@ -89,8 +94,8 @@
     </div>
 
     <div class="tip">
-        <strong>v18.1 排序修復版：</strong><br>
-        已修正資料同步時的排序錯誤，現在會正確按照「實際重生時間」排列。
+        <strong>v19.0 更新：</strong><br>
+        輸入框預設為空白以防誤觸；按鈕文字與倒數顯示已優化。
     </div>
 </div>
 
@@ -181,7 +186,6 @@ function parseInitTime(str) {
     } catch(e) { return null; }
 }
 
-// 初始化
 function init() {
     const hook = localStorage.getItem('zenonia_webhook_url');
     if(hook) document.getElementById('webhook-url').value = hook;
@@ -193,11 +197,6 @@ function init() {
         } else {
             loadDefaults();
         }
-        
-        // [關鍵修復]：收到資料後，先校正固定王的時間 (把過去時間修成未來時間)
-        recalcFixedBosses();
-        
-        // 校正後再渲染，這樣排序就會正確了
         renderStaticList();
         updateTimers();
     }, (error) => {
@@ -219,7 +218,6 @@ function loadDefaults() {
     saveData();
 }
 
-// [關鍵功能] 校正固定王時間
 function recalcFixedBosses() {
     const now = new Date();
     bosses.forEach(boss => {
@@ -230,7 +228,6 @@ function recalcFixedBosses() {
             if (now.getTime() > target.getTime()) {
                 target.setDate(target.getDate() + 1);
             }
-            // 這裡只更新記憶體中的數值，不回寫資料庫，以免頻繁寫入
             boss.nextSpawn = target.getTime();
         }
     });
@@ -240,7 +237,6 @@ function renderStaticList() {
     const list = document.getElementById('bossList');
     if(!list) return;
 
-    // 此時的 bosses 已經經過 recalcFixedBosses 校正，排序會是正確的
     const sorted = [...bosses].sort((a,b) => {
         if(!a.nextSpawn) return 1;
         if(!b.nextSpawn) return -1;
@@ -253,10 +249,11 @@ function renderStaticList() {
         if (boss.type === 'fixed') {
             inputHtml = `<div class="auto-tag">🔄 自動循環</div>`;
         } else {
+            // [修改] 按鈕文字改為 "更新擊殺時間"
             inputHtml = `
                 <div class="input-row">
                     <input type="text" id="in-${boss.id}" class="datepicker" placeholder="點擊選擇時間">
-                    <button class="btn btn-update" onclick="update(${boss.id})">更新</button>
+                    <button class="btn btn-update" onclick="update(${boss.id})">更新擊殺時間</button>
                 </div>`;
         }
 
@@ -269,19 +266,20 @@ function renderStaticList() {
                     </div>
                     <div class="boss-loc">📍 ${boss.loc}</div>
                     <div id="timer-${boss.id}" class="boss-timer">-- : --</div>
-                    <div id="predict-${boss.id}" class="boss-predict">預計: ---</div>
+                    <div id="predict-${boss.id}" class="boss-predict">出現時間: ---</div>
                 </div>
                 <div class="input-group">${inputHtml}</div>
             </div>`;
     });
     list.innerHTML = html;
 
+    // [修改] 移除 defaultDate，讓預設值為空白
     flatpickr(".datepicker", {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
         time_24hr: true,
         locale: "zh_tw",
-        defaultDate: new Date(),
+        // defaultDate: new Date(),  <-- 這行已移除，確保重新整理時是空白
         minuteIncrement: 1,
         disableMobile: "true"
     });
@@ -305,7 +303,9 @@ function updateTimers() {
         if (boss.nextSpawn) {
             const diff = boss.nextSpawn - now;
             const d = new Date(boss.nextSpawn);
-            predictText = `預計: ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            
+            // [修改] 文案改為 "出現時間"
+            predictText = `出現時間: ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
             if (diff <= 0) {
                 statusClass = "status-active"; 
@@ -315,7 +315,8 @@ function updateTimers() {
                 const hh = Math.floor(diff / 3600000);
                 const mm = Math.floor((diff % 3600000) / 60000);
                 const ss = Math.floor((diff % 60000) / 1000);
-                timerText = `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+                // [修改] 加上 "倒數" 前綴
+                timerText = `倒數 ${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 
                 if (diff < 600000) { 
                     statusClass = "status-soon"; 
@@ -350,12 +351,16 @@ function saveWebhook() {
 
 window.update = function(id) {
     const input = document.getElementById(`in-${id}`);
-    if(!input || !input.value) return alert("請點擊選擇時間！");
+    
+    // [修改] 增加防呆，如果空白則警告
+    if(!input || !input.value) return alert("請先點擊選擇擊殺時間，再按下更新！");
+    
     const killTime = new Date(input.value).getTime();
     if(isNaN(killTime)) return alert("時間格式錯誤");
     
     const bossIndex = bosses.findIndex(b => b.id === id);
     if (bossIndex === -1) return;
+    
     const boss = bosses[bossIndex];
 
     if (boss.type === 'cd') {
@@ -364,6 +369,9 @@ window.update = function(id) {
         nextTime.setMinutes(nextTime.getMinutes() + addMin);
         boss.nextSpawn = nextTime.getTime();
         saveData();
+        
+        // 更新成功後，清空輸入框，避免下次誤觸
+        input.value = "";
     }
 };
 
@@ -390,7 +398,7 @@ window.sendToDiscord = function() {
         username: "月歸俏秘書",
         embeds: [{
             title: "📢起床吃王啦",
-            description: description + "\n\n🔗 [工具傳送門](https://willa0916.github.io/zenonia-boss/)",
+            description: description + "\n\n🔗 [開啟工具網頁](https://willa0916.github.io/zenonia-boss/)",
             color: 5814783, 
             footer: { text: "更新時間: " + new Date().toLocaleTimeString('zh-TW', { hour12: false }) }
         }]
@@ -410,7 +418,7 @@ function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
     let text = "";
     if(isCodeBlock) {
-        text += "📢 **月歸的吃王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
+        text += "📢 **吃王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
     }
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
