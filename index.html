@@ -29,9 +29,6 @@
         .status-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .online { background-color: #43b581; box-shadow: 0 0 5px #43b581; }
         .offline { background-color: #ed4245; }
-
-        .webhook-area { background: #2f3136; padding: 10px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #5865F2; display: flex; gap: 10px; align-items: center;}
-        .webhook-input { background: #40444b; border: 1px solid #202225; color: white; padding: 8px; border-radius: 4px; flex-grow: 1; font-family: monospace;}
         
         .boss-card { background-color: #2f3136; padding: 12px 18px; margin-bottom: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-left: 6px solid #72767d; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background-color 0.3s, border-color 0.3s; }
         
@@ -80,20 +77,14 @@
             <button class="btn btn-discord" onclick="sendToDiscord()">🚀 發送到 Discord</button>
         </div>
     </div>
-    
-    <div class="webhook-area">
-        <span style="font-size:0.9rem; color:#bbb;">Webhook:</span>
-        <input type="password" id="webhook-url" class="webhook-input" placeholder="請貼上 Discord Webhook URL">
-        <button class="btn btn-copy" onclick="saveWebhook()" style="padding: 5px 10px; font-size: 0.8rem;">💾 儲存</button>
-    </div>
 
     <div id="bossList">
         <div style="text-align:center; padding: 50px; color: #aaa;">正在連線至雲端資料庫...</div>
     </div>
 
     <div class="tip">
-        <strong>v21.0 更新：</strong><br>
-        已升級 Firebase 核心版本，修復安全性阻擋(CSP)問題。
+        <strong>v22.0 更新：</strong><br>
+        新增多隻高階BOSS、綁定專屬 Webhook 廣播通道。
     </div>
 </div>
 
@@ -102,8 +93,9 @@
 
 <script>
 // ==========================================
-// 【已自動帶入您的 Firebase 設定】
+// 【系統設定區】
 // ==========================================
+// 1. Firebase 設定
 const firebaseConfig = {
     apiKey: "AIzaSyAD48KJ3oobOE3IQX7o9WhF1eRC-Zd2J24",
     authDomain: "game-7c96b.firebaseapp.com",
@@ -113,6 +105,9 @@ const firebaseConfig = {
     messagingSenderId: "325794018538",
     appId: "1:325794018538:web:3fa748f4f541f227579393"
 };
+
+// 2. 您的 Discord Webhook 網址 (已寫死)
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1458746934226452685/WSJ6oiWJL63p8-hvxPRCkBSBOQ-_dCFOGSVSte_nkvjXgipbWFyrEUDDHsiyXNNIokKX";
 // ==========================================
 
 window.onerror = function(msg, url, line, col, error) {
@@ -142,7 +137,7 @@ connectedRef.on("value", (snap) => {
     }
 });
 
-// --- 資料設定 ---
+// --- 資料設定 (包含新增的 5 隻 BOSS) ---
 const rawData = [
     { name: "埃奇納德(25)", cd: 24, type: "fixed", loc: "瑪魯森林", fixTime: "12:00" },
     { name: "斯吉拉(30)", cd: 24, type: "fixed", loc: "雲之高原", fixTime: "14:00" },
@@ -151,17 +146,24 @@ const rawData = [
     { name: "博卡頓(45)", cd: 24, type: "fixed", loc: "業報3F", fixTime: "20:00" },
     { name: "泰米爾(48)", cd: 24, type: "fixed", loc: "尼夫萊爾城", fixTime: "22:00" },
     
-    { name: "普魯特(65)", cd: 6, type: "cd", loc: "地獄3F", initTime: "1/8 10:15" },
-    { name: "格里貢(55)", cd: 12, type: "cd", loc: "倒轉火紅荒野", initTime: "1/8 15:15" },
-    { name: "佩爾(77)", cd: 24, type: "cd", loc: "罪惡3F", initTime: "1/8 15:15" },
-    { name: "亞拉金(78)", cd: 24, type: "cd", loc: "雷歐城", initTime: "1/8 15:19" }, 
-    { name: "卡威因(85)", cd: 24, type: "cd", loc: "恥辱的神廟", initTime: "1/8 15:20" },
-    { name: "帕提洛斯(60)", cd: 6, type: "cd", loc: "倒轉卡納克峽谷", initTime: "1/8 15:23" },
-    { name: "EZ-09(62)", cd: 12, type: "cd", loc: "倒轉古代遺跡", initTime: "1/8 15:29" },
-    { name: "維瑟斯(72)", cd: 9, type: "cd", loc: "拉米斯森林", initTime: "1/8 18:28" },
-    { name: "武庫拉(50)", cd: 13.5, type: "cd", loc: "倒轉艾拉溫溪谷", initTime: "1/8 18:14" },
-    { name: "布萊登(63)", cd: 18, type: "cd", loc: "業報6F", initTime: "1/9 03:15" },
-    { name: "哈尼文(68)", cd: 18, type: "cd", loc: "瑪勒薩海岸", initTime: "1/8 14:45" }
+    { name: "武庫拉(50)", cd: 13.5, type: "cd", loc: "倒轉艾拉溫溪谷", initTime: "1/8 12:00" },
+    { name: "格里貢(55)", cd: 12, type: "cd", loc: "倒轉火紅荒野", initTime: "1/8 12:00" },
+    { name: "帕提洛斯(60)", cd: 6, type: "cd", loc: "倒轉卡納克峽谷", initTime: "1/8 12:00" },
+    { name: "EZ-09(62)", cd: 12, type: "cd", loc: "倒轉古代遺跡", initTime: "1/8 12:00" },
+    { name: "布萊登(63)", cd: 18, type: "cd", loc: "業報6F", initTime: "1/8 12:00" },
+    { name: "普魯特(65)", cd: 6, type: "cd", loc: "地獄3F", initTime: "1/8 12:00" },
+    { name: "哈尼文(68)", cd: 18, type: "cd", loc: "瑪勒薩海岸", initTime: "1/8 12:00" },
+    { name: "維瑟斯(72)", cd: 9, type: "cd", loc: "拉米斯森林", initTime: "1/8 12:00" },
+    { name: "佩爾(77)", cd: 24, type: "cd", loc: "罪惡3F", initTime: "1/8 12:00" },
+    { name: "亞拉金(78)", cd: 24, type: "cd", loc: "雷歐城", initTime: "1/8 12:00" }, 
+    { name: "卡威因(85)", cd: 24, type: "cd", loc: "恥辱的神廟", initTime: "1/8 12:00" },
+    
+    // 👇 新增的 5 隻 BOSS 👇
+    { name: "厄瑞玻斯(87) [50%機率]", cd: 12, type: "cd", loc: "德瓦森林", initTime: "1/8 12:00" },
+    { name: "拉頓的幻影(90)", cd: 48, type: "cd", loc: "海市蜃樓頂層", initTime: "1/8 12:00" },
+    { name: "雷斯(94) [50%機率]", cd: 12, type: "cd", loc: "比帕提山脈", initTime: "1/8 12:00" },
+    { name: "希歐多爾(104) [50%機率]", cd: 12, type: "cd", loc: "拉卡廢墟", initTime: "1/8 12:00" },
+    { name: "索尼安(112) [50%機率]", cd: 12, type: "cd", loc: "巴普勒", initTime: "1/8 12:00" }
 ];
 
 let bosses = [];
@@ -182,13 +184,15 @@ function parseInitTime(str) {
 }
 
 function init() {
-    const hook = localStorage.getItem('zenonia_webhook_url');
-    if(hook) document.getElementById('webhook-url').value = hook;
-
     db.ref('bosses').on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) {
             bosses = val;
+            
+            // 防呆機制：如果雲端資料庫的 BOSS 數量比新設定的 rawData 少，強制執行一次更新
+            if(bosses.length < rawData.length) {
+                mergeNewBosses();
+            }
         } else {
             loadDefaults();
         }
@@ -203,6 +207,23 @@ function init() {
         recalcFixedBosses();
         updateTimers();
     }, 1000);
+}
+
+// 幫助合併新舊 BOSS 數據的函數
+function mergeNewBosses() {
+    let updated = false;
+    rawData.forEach((newBoss, idx) => {
+        const exists = bosses.find(b => b.name === newBoss.name);
+        if (!exists) {
+            bosses.push({
+                ...newBoss,
+                id: idx, // 給予新的ID
+                nextSpawn: newBoss.type === 'fixed' ? null : parseInitTime(newBoss.initTime)
+            });
+            updated = true;
+        }
+    });
+    if (updated) saveData();
 }
 
 function loadDefaults() {
@@ -332,14 +353,6 @@ function saveData() {
     db.ref('bosses').set(bosses).catch(e => alert("同步失敗：" + e.message));
 }
 
-function saveWebhook() {
-    const url = document.getElementById('webhook-url').value.trim();
-    if(url) {
-        localStorage.setItem('zenonia_webhook_url', url);
-        alert("Webhook 網址已儲存！");
-    }
-}
-
 window.update = function(id) {
     const input = document.getElementById(`in-${id}`);
     
@@ -375,9 +388,9 @@ window.copyToClipboard = function() {
     navigator.clipboard.writeText(text).then(()=>alert("已複製文字！")).catch(()=>alert("複製失敗"));
 };
 
+// 【修改完成】直接讀取頂部的 DISCORD_WEBHOOK_URL
 window.sendToDiscord = function() {
-    const url = document.getElementById('webhook-url').value.trim();
-    if (!url) return alert("請先填入 Webhook 網址並儲存！");
+    const url = DISCORD_WEBHOOK_URL; 
     
     const list = getSortedList();
     const description = formatListText(list, false);
