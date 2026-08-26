@@ -107,17 +107,35 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             padding: 20px; box-sizing: border-box; text-align: center;
         }
+        
+        /* 卡片背面 */
         .card-back {
             background: linear-gradient(135deg, #4f545c, #202225);
             border: 2px solid #72767d; color: #fff;
         }
         .card-back:hover { border-color: #f1c40f; box-shadow: 0 0 15px rgba(241,196,15,0.3); }
+        
+        /* 卡片正面 (基礎設定) */
         .card-front {
-            background: linear-gradient(135deg, #fff9e6, #ffeba3);
-            transform: rotateY(180deg); color: #333; border: 3px solid #f1c40f;
+            transform: rotateY(180deg); border: 3px solid transparent;
         }
-        .card-front h2 { margin: 0 0 15px 0; color: #d35400; text-shadow: none; font-size: 1.6rem; line-height: 1.3; }
-        .card-front p { margin: 0; font-size: 1rem; line-height: 1.5; font-weight: bold; color: #444; }
+        .card-front h2 { margin: 0 0 15px 0; font-weight: bold; }
+        .card-front p { margin: 0; font-size: 1.05rem; line-height: 1.5; font-weight: bold; }
+
+        /* 卡片正面主題：【吉】(金/紅) */
+        .type-good { background: linear-gradient(135deg, #fff9e6, #ffeba3); border-color: #f1c40f; }
+        .type-good h2 { color: #d35400; text-shadow: none; }
+        .type-good p { color: #444; }
+
+        /* 卡片正面主題：【凶】(暗黑/紅) */
+        .type-bad { background: linear-gradient(135deg, #2b1d1d, #4a2525); border-color: #e74c3c; }
+        .type-bad h2 { color: #ff7675; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .type-bad p { color: #f1f2f6; }
+
+        /* 卡片正面主題：【特殊/改運】(星空深藍/紫) */
+        .type-special { background: linear-gradient(135deg, #182848, #4b6cb7); border-color: #9b59b6; }
+        .type-special h2 { color: #fbc531; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .type-special p { color: #f1f2f6; }
         /* ======================================================= */
     </style>
 </head>
@@ -143,8 +161,8 @@
     </div>
 
     <div class="tip">
-        <strong>v24.0 更新：</strong><br>
-        專屬「公會運勢與改運卡」實裝！試試今天的手氣吧！
+        <strong>v25.0 更新：</strong><br>
+        專屬「公會運勢與改運卡」視覺大進化！快來試試今天的手氣！
     </div>
 </div>
 
@@ -182,7 +200,6 @@
 // ==========================================
 // 【系統設定區】
 // ==========================================
-// 1. Firebase 設定
 const firebaseConfig = {
     apiKey: "AIzaSyAD48KJ3oobOE3IQX7o9WhF1eRC-Zd2J24",
     authDomain: "game-7c96b.firebaseapp.com",
@@ -193,7 +210,6 @@ const firebaseConfig = {
     appId: "1:325794018538:web:3fa748f4f541f227579393"
 };
 
-// 2. 您的 Discord Webhook 網址 (已寫死)
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1458746934226452685/WSJ6oiWJL63p8-hvxPRCkBSBOQ-_dCFOGSVSte_nkvjXgipbWFyrEUDDHsiyXNNIokKX";
 // ==========================================
 
@@ -204,7 +220,6 @@ window.onerror = function(msg, url, line, col, error) {
     return false;
 };
 
-// 初始化 Firebase
 let db;
 try {
     firebase.initializeApp(firebaseConfig);
@@ -213,7 +228,6 @@ try {
     window.onerror(e.message, "", 0);
 }
 
-// 監聽連線狀態
 const connectedRef = firebase.database().ref(".info/connected");
 connectedRef.on("value", (snap) => {
     const el = document.getElementById('conn-status');
@@ -224,7 +238,6 @@ connectedRef.on("value", (snap) => {
     }
 });
 
-// --- 資料設定 (包含新增的 5 隻 BOSS) ---
 const rawData = [
     { name: "埃奇納德(25)", cd: 24, type: "fixed", loc: "瑪魯森林", fixTime: "12:00" },
     { name: "斯吉拉(30)", cd: 24, type: "fixed", loc: "雲之高原", fixTime: "14:00" },
@@ -274,11 +287,7 @@ function init() {
         const val = snapshot.val();
         if (val) {
             bosses = val;
-            
-            // 防呆機制：如果雲端資料庫的 BOSS 數量比新設定的 rawData 少，強制執行一次更新
-            if(bosses.length < rawData.length) {
-                mergeNewBosses();
-            }
+            if(bosses.length < rawData.length) mergeNewBosses();
         } else {
             loadDefaults();
         }
@@ -295,7 +304,6 @@ function init() {
     }, 1000);
 }
 
-// 幫助合併新舊 BOSS 數據的函數
 function mergeNewBosses() {
     let updated = false;
     rawData.forEach((newBoss, idx) => {
@@ -303,7 +311,7 @@ function mergeNewBosses() {
         if (!exists) {
             bosses.push({
                 ...newBoss,
-                id: idx, // 給予新的ID
+                id: idx,
                 nextSpawn: newBoss.type === 'fixed' ? null : parseInitTime(newBoss.initTime)
             });
             updated = true;
@@ -528,7 +536,6 @@ function formatListText(list, isCodeBlock = true) {
 }
 
 // ================= 今日運勢功能 (JavaScript) =================
-// 運勢籤筒 
 const fortunes = [
     { title: "🧧 大吉 | 天選之人", desc: "衝裝成功率體感翻倍，那些卡了大半年的裝備，今天有機會一發入魂。" },
     { title: "🧧 大吉 | 單抽入魂", desc: "今日運勢爆棚，隨便單抽都能看見彩光！建議立刻把身上的卡都抽光，紅變紅精靈+1" },
@@ -557,7 +564,7 @@ function openFortuneModal() {
     
     const today = getTodayString();
     
-    // 【修改點】將記憶鑰匙改為 v2，無視舊版的記憶，讓大家今天可以重抽！
+    // 【修改點】維持 v2 記憶鑰匙，保留成員今日的抽卡紀錄
     const savedData = localStorage.getItem('zenonia_fortune_v2'); 
     
     if (savedData) {
@@ -588,7 +595,7 @@ function flipCard() {
     const randomIndex = Math.floor(Math.random() * fortunes.length);
     const result = fortunes[randomIndex];
     
-    // 【修改點】使用 v2 鑰匙寫入記憶
+    // 寫入 v2 記憶
     localStorage.setItem('zenonia_fortune_v2', JSON.stringify({
         date: today,
         fortune: result
@@ -600,8 +607,27 @@ function flipCard() {
 }
 
 function applyFortuneToCard(fortune) {
-    document.getElementById('fortune-result-title').innerText = fortune.title;
+    // 1. 解決字數過多斷行：將「標籤」與「標題」分拆成上下兩行排版
+    let titleHtml = fortune.title;
+    if (fortune.title.includes(' | ')) {
+        const parts = fortune.title.split(' | ');
+        titleHtml = `<span style="font-size:1.05rem; display:block; margin-bottom:6px; opacity:0.9;">${parts[0]}</span>` + 
+                    `<span style="font-size:1.7rem; display:block;">${parts[1]}</span>`;
+    }
+    document.getElementById('fortune-result-title').innerHTML = titleHtml;
     document.getElementById('fortune-result-desc').innerText = fortune.desc;
+    
+    // 2. 解決顏色區隔：依照關鍵字加上對應的 CSS 主題類別
+    const cardFront = document.querySelector('.card-front');
+    cardFront.classList.remove('type-good', 'type-bad', 'type-special');
+    
+    if (fortune.title.includes('凶')) {
+        cardFront.classList.add('type-bad');
+    } else if (fortune.title.includes('改運卡') || fortune.title.includes('特殊')) {
+        cardFront.classList.add('type-special');
+    } else {
+        cardFront.classList.add('type-good');
+    }
 }
 // =======================================================
 
