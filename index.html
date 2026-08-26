@@ -59,6 +59,66 @@
 
         .tip { font-size: 0.85rem; color: #999; margin-top: 30px; text-align: center; border-top: 1px solid #333; padding-top: 15px;}
         #rescue-console { display: none; background: #500; color: #fff; padding: 20px; margin-bottom: 20px; border: 2px solid red; white-space: pre-wrap; font-size: 1rem; border-radius: 8px; }
+
+        /* ================= 今日運勢功能 (CSS) ================= */
+        /* 懸浮按鈕 */
+        #fortune-fab {
+            position: fixed; bottom: 20px; right: 20px;
+            background-color: #f1c40f; color: #202225;
+            border: none; border-radius: 50px;
+            padding: 12px 20px; font-size: 1rem; font-weight: bold;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s, background-color 0.2s;
+            z-index: 999;
+        }
+        #fortune-fab:hover { transform: scale(1.05); background-color: #f39c12; }
+        
+        /* 彈窗背景 */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .fortune-container {
+            background: #2f3136; padding: 25px; border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative;
+            max-width: 320px; width: 90%;
+        }
+        .close-btn {
+            position: absolute; top: 12px; right: 15px; color: #bbb;
+            cursor: pointer; font-size: 1.2rem;
+        }
+        .close-btn:hover { color: #fff; }
+        
+        /* 3D 卡片場景 */
+        .card-scene {
+            width: 240px; height: 340px; margin: 15px auto 0;
+            perspective: 1000px; cursor: pointer;
+        }
+        .card {
+            width: 100%; height: 100%; position: relative;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        .card.is-flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; border-radius: 12px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px; box-sizing: border-box; text-align: center;
+        }
+        .card-back {
+            background: linear-gradient(135deg, #4f545c, #202225);
+            border: 2px solid #72767d; color: #fff;
+        }
+        .card-back:hover { border-color: #f1c40f; box-shadow: 0 0 15px rgba(241,196,15,0.3); }
+        .card-front {
+            background: linear-gradient(135deg, #fff9e6, #ffeba3);
+            transform: rotateY(180deg); color: #333; border: 3px solid #f1c40f;
+        }
+        .card-front h2 { margin: 0 0 15px 0; color: #d35400; text-shadow: none; font-size: 1.6rem; line-height: 1.3; }
+        .card-front p { margin: 0; font-size: 1rem; line-height: 1.5; font-weight: bold; color: #444; }
+        /* ======================================================= */
     </style>
 </head>
 <body>
@@ -83,10 +143,37 @@
     </div>
 
     <div class="tip">
-        <strong>v22.0 更新：</strong><br>
-        新增多隻高階BOSS、綁定專屬 Webhook 廣播通道。
+        <strong>v24.0 更新：</strong><br>
+        專屬「公會運勢與改運卡」實裝！試試今天的手氣吧！
     </div>
 </div>
+
+<!-- ================= 今日運勢功能 (HTML) ================= -->
+<!-- 右下角懸浮按鈕 -->
+<button id="fortune-fab" onclick="openFortuneModal()">🎴 今日運勢</button>
+
+<!-- 抽卡彈窗與 3D 卡片 -->
+<div id="fortune-modal" class="modal-overlay" onclick="closeFortuneModal(event)">
+    <div class="fortune-container" onclick="event.stopPropagation()">
+        <div class="close-btn" onclick="closeFortuneModal(event)">✖</div>
+        <h3 id="fortune-title" style="text-align:center; color:#fff; margin-top:0;">抽一張今日運勢</h3>
+        <div class="card-scene" onclick="flipCard()">
+            <div id="fortune-card" class="card">
+                <!-- 卡片背面 -->
+                <div class="card-face card-back">
+                    <span style="font-size: 4rem;">🎴</span>
+                    <p style="margin-top: 15px; color: #aaa;">點擊翻牌</p>
+                </div>
+                <!-- 卡片正面 -->
+                <div class="card-face card-front">
+                    <h2 id="fortune-result-title"></h2>
+                    <p id="fortune-result-desc"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ======================================================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
@@ -158,7 +245,6 @@ const rawData = [
     { name: "亞拉金(78)", cd: 24, type: "cd", loc: "雷歐城", initTime: "1/8 12:00" }, 
     { name: "卡威因(85)", cd: 24, type: "cd", loc: "恥辱的神廟", initTime: "1/8 12:00" },
     
-    // 👇 新增的 5 隻 BOSS 👇
     { name: "厄瑞玻斯(87) [50%機率]", cd: 12, type: "cd", loc: "德瓦森林", initTime: "1/8 12:00" },
     { name: "拉頓的幻影(90)", cd: 48, type: "cd", loc: "海市蜃樓頂層", initTime: "1/8 12:00" },
     { name: "雷斯(94) [50%機率]", cd: 12, type: "cd", loc: "比帕提山脈", initTime: "1/8 12:00" },
@@ -388,7 +474,6 @@ window.copyToClipboard = function() {
     navigator.clipboard.writeText(text).then(()=>alert("已複製文字！")).catch(()=>alert("複製失敗"));
 };
 
-// 【修改完成】直接讀取頂部的 DISCORD_WEBHOOK_URL
 window.sendToDiscord = function() {
     const url = DISCORD_WEBHOOK_URL; 
     
@@ -434,13 +519,91 @@ function formatListText(list, isCodeBlock = true) {
         } else {
             let statusEmoji = "⏳";
             if(diff <= 0) statusEmoji = "🔥 **已出現**";
-            else if(diff < 600000) statusEmoji = "⚠️ **即將出現**";
+            else if(diff < 600000) statusEmoji = "⚠️ **即推出現**";
             text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
         }
     });
     if(isCodeBlock) text += "```";
     return text;
 }
+
+// ================= 今日運勢功能 (JavaScript) =================
+// 運勢籤筒 
+const fortunes = [
+    { title: "🧧 大吉 | 天選之人", desc: "衝裝成功率體感翻倍，那些卡了大半年的裝備，今天有機會一發入魂。" },
+    { title: "🧧 大吉 | 單抽入魂", desc: "今日運勢爆棚，隨便單抽都能看見彩光！建議立刻把身上的卡都抽光，紅變紅精靈+1" },
+    { title: "🌟 超吉 | 恥度大開", desc: "今日掉寶率與恥力成正比！打王前，在DC隨機@一位成員大喊「我愛你，請賜給我力量！」，掉寶率將獲得神秘加成。" },
+    { title: "🧧 大吉 | 公會寵兒", desc: "今天自帶好人緣 Buff，發問必有人答，求救必有人幫。適合大膽要求大佬帶BOSS帶副本！" },
+    { title: "🍂 小吉 | 尾刀之神", desc: "今日自帶「尾刀」光環，打 BOSS 掉寶率微幅提升。只要努力活到最後，金光閃閃的戰利品就是你的！" },
+    { title: "💀 大凶 | 碎碎平安", desc: "裝備強化介面今日被施了詛咒。如果不想看到「強化失敗，裝備已損毀」的畫面，請務必把手綁起來。" },
+    { title: "🌧️ 小凶 | 地板指揮官", desc: "今日走位極易失誤，有高機率成為第一躺平的團員。請隨時抱緊補師大腿。" },
+    { title: "💀 大凶 | 讀心系統上線", desc: "遊戲系統已鎖定你的願望清單。越想抽到的越抽不到，建議今天假裝自己什麼都不想要，無欲則剛。" },
+    { title: "🔮 特殊 | 祭品玄學", desc: "今日適合用別人的失敗來成就自己。先看著頻道裡誰衝裝爆了，立刻點下你的強化，成功率神秘提升！" },
+    { title: "🔄 改運卡 | 課金改命卡", desc: "覺得今天非氣纏身？立刻向永遠 18 歲的木木獻上 666 鑽，即可啟動神秘的改運陣法。心誠則靈，運勢重新洗牌！" },
+    { title: "🔄 改運卡 | 祭品召喚卡", desc: "運氣太差怎麼辦？拿冰媽一家來祭天！立即出發討伐冰媽全家，吸收滿滿的「祭品之力」，用最殘暴的方式強行把幸運值拉滿！" }
+];
+
+function getTodayString() {
+    const now = new Date();
+    return now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate();
+}
+
+function openFortuneModal() {
+    const modal = document.getElementById('fortune-modal');
+    const card = document.getElementById('fortune-card');
+    const title = document.getElementById('fortune-title');
+    
+    modal.style.display = 'flex';
+    
+    const today = getTodayString();
+    
+    // 【修改點】將記憶鑰匙改為 v2，無視舊版的記憶，讓大家今天可以重抽！
+    const savedData = localStorage.getItem('zenonia_fortune_v2'); 
+    
+    if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (parsed.date === today) {
+            title.innerText = "您今日的專屬運勢";
+            applyFortuneToCard(parsed.fortune);
+            card.classList.add('is-flipped');
+            return; 
+        }
+    }
+    
+    title.innerText = "抽一張今日運勢";
+    card.classList.remove('is-flipped');
+}
+
+function closeFortuneModal(event) {
+    if (event && event.target.id !== 'fortune-modal' && !event.target.classList.contains('close-btn')) return;
+    document.getElementById('fortune-modal').style.display = 'none';
+}
+
+function flipCard() {
+    const card = document.getElementById('fortune-card');
+    
+    if (card.classList.contains('is-flipped')) return;
+    
+    const today = getTodayString();
+    const randomIndex = Math.floor(Math.random() * fortunes.length);
+    const result = fortunes[randomIndex];
+    
+    // 【修改點】使用 v2 鑰匙寫入記憶
+    localStorage.setItem('zenonia_fortune_v2', JSON.stringify({
+        date: today,
+        fortune: result
+    }));
+    
+    applyFortuneToCard(result);
+    card.classList.add('is-flipped');
+    document.getElementById('fortune-title').innerText = "您今日的專屬運勢";
+}
+
+function applyFortuneToCard(fortune) {
+    document.getElementById('fortune-result-title').innerText = fortune.title;
+    document.getElementById('fortune-result-desc').innerText = fortune.desc;
+}
+// =======================================================
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
