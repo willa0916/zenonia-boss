@@ -111,30 +111,29 @@
             transform: rotateY(180deg);
         }
         
-        /* 修正斷行：將文字獨立開來設定 */
         .fortune-type-label { font-size: 1.1rem; margin-bottom: 8px; font-weight: bold; opacity: 0.9; }
         .fortune-main-title { font-size: 1.8rem; margin: 0 0 15px 0; font-weight: bold; line-height: 1.2; }
         .fortune-desc { margin: 0; font-size: 1rem; line-height: 1.6; font-weight: bold; }
 
-        /* ======== 圖片套用與主題文字顏色 ======== */
+        /* ======== 圖片套用與主題文字顏色 (加入防呆底色) ======== */
         
         /* 【銀色：一般或凶卡】 */
-        .theme-silver .card-back { background-image: url('銀色.png'); }
-        .theme-silver .card-front { background-image: url('銀色正面.png'); }
+        .theme-silver .card-back { background-image: url('銀色.png'); background-color: #718093; }
+        .theme-silver .card-front { background-image: url('銀色正面.png'); background-color: #f5f6fa; }
         .theme-silver .card-front .fortune-type-label, 
         .theme-silver .card-front .fortune-main-title { color: #1e3799; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
         .theme-silver .card-front .fortune-desc { color: #0a3d62; }
 
         /* 【金色：金卡 (大吉/超吉)】 */
-        .theme-gold .card-back { background-image: url('金色.png'); }
-        .theme-gold .card-front { background-image: url('金色正面.png'); }
+        .theme-gold .card-back { background-image: url('金色.png'); background-color: #e1b12c; }
+        .theme-gold .card-front { background-image: url('金色正面.png'); background-color: #fff9e6; }
         .theme-gold .card-front .fortune-type-label, 
         .theme-gold .card-front .fortune-main-title { color: #b71540; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
         .theme-gold .card-front .fortune-desc { color: #5c2c16; }
 
         /* 【彩色：改運卡/特殊】 */
-        .theme-color .card-back { background-image: url('彩色.png'); }
-        .theme-color .card-front { background-image: url('彩色正片.png'); }
+        .theme-color .card-back { background-image: url('彩色.png'); background-color: #4b6cb7; }
+        .theme-color .card-front { background-image: url('彩色正片.png'); background-color: #e0c3fc; }
         .theme-color .card-front .fortune-type-label, 
         .theme-color .card-front .fortune-main-title { color: #fbc531; text-shadow: 0px 2px 4px rgba(0,0,0,0.8); }
         .theme-color .card-front .fortune-desc { color: #ffffff; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); }
@@ -169,8 +168,8 @@
     </div>
 
     <div class="tip">
-        <strong>v28.0 更新：</strong><br>
-        專屬「公會運勢與改運卡」排版再進化！快來試試今天的手氣！
+        <strong>v29.0 更新：</strong><br>
+        修復運勢卡片破圖問題，全新高畫質卡池正式上線！
     </div>
 </div>
 
@@ -186,7 +185,6 @@
                 <div class="card-face card-back">
                     <span class="click-hint">點擊翻牌</span>
                 </div>
-                <!-- 徹底獨立出運勢(type)和標題(title)的樓層 -->
                 <div class="card-face card-front">
                     <div id="fortune-result-type" class="fortune-type-label"></div>
                     <h2 id="fortune-result-title" class="fortune-main-title"></h2>
@@ -572,8 +570,8 @@ function openFortuneModal() {
     
     const today = getTodayString();
     
-    // 【記憶鑰匙】維持 v2，保護今天已經抽卡的成員紀錄
-    const savedData = localStorage.getItem('zenonia_fortune_v2'); 
+    // 【強制更新記憶鑰匙為 v4】徹底清除可能導致 TypeError 的舊版錯誤格式快取
+    const savedData = localStorage.getItem('zenonia_fortune_v4'); 
     
     if (savedData) {
         const parsed = JSON.parse(savedData);
@@ -608,7 +606,8 @@ function flipCard() {
     const randomIndex = Math.floor(Math.random() * fortunes.length);
     const result = fortunes[randomIndex];
     
-    localStorage.setItem('zenonia_fortune_v2', JSON.stringify({
+    // 寫入全新 v4 記憶
+    localStorage.setItem('zenonia_fortune_v4', JSON.stringify({
         date: today,
         fortune: result
     }));
