@@ -19,8 +19,8 @@
             color: #dcddde; 
             margin: 0; 
             padding: 20px; 
-            /* 套用公會專屬背景，並加上深色半透明遮罩確保文字清晰 */
-            background-image: linear-gradient(rgba(15, 15, 20, 0.85), rgba(15, 15, 20, 0.85)), url('bg.png');
+            /* 【修改點】降低深色遮罩的透明度，從 0.85 降到 0.65，讓背景圖更明顯 */
+            background-image: linear-gradient(rgba(15, 15, 20, 0.65), rgba(15, 15, 20, 0.65)), url('bg.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -42,10 +42,10 @@
         
         /* 公會 LOGO 設定 */
         .guild-logo {
-            max-width: 280px; /* 限制最大寬度，避免在電腦上大得太誇張 */
-            width: 80%;       /* 在手機上會自動縮小適應螢幕 */
+            max-width: 280px; 
+            width: 80%;       
             height: auto;
-            filter: drop-shadow(0px 0px 15px rgba(138, 43, 226, 0.6)); /* 加上紫色神祕光暈 */
+            filter: drop-shadow(0px 0px 15px rgba(138, 43, 226, 0.6)); 
         }
 
         /* 狀態小綠點定位 */
@@ -53,8 +53,9 @@
             display: flex;
             align-items: center;
             font-size: 0.85rem;
-            color: #aaa;
+            color: #ccc; /* 配合背景調亮字體 */
             margin-top: -5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 增加文字陰影確保可讀性 */
         }
         .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
         .online { background-color: #43b581; box-shadow: 0 0 5px #43b581; }
@@ -72,8 +73,8 @@
         
         /* ================= BOSS 卡片區塊 ================= */
         .boss-card { 
-            /* 讓卡片背景帶有一點點透明度，透出後面的霸氣公會背景 */
-            background-color: rgba(47, 49, 54, 0.85); 
+            /* 【修改點】讓卡片本身也變透明一點，從 0.85 降到 0.7，透出更多背景細節 */
+            background-color: rgba(47, 49, 54, 0.7); 
             backdrop-filter: blur(5px);
             padding: 12px 18px; 
             margin-bottom: 12px; 
@@ -86,22 +87,22 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
             transition: all 0.3s; 
         }
-        .boss-card:hover { transform: translateX(5px); background-color: rgba(47, 49, 54, 0.95); }
+        .boss-card:hover { transform: translateX(5px); background-color: rgba(47, 49, 54, 0.85); }
         
-        .status-active { border-left-color: #ed4245 !important; background-color: rgba(60, 30, 30, 0.85) !important; }
-        .status-soon { border-left-color: #f1c40f !important; background-color: rgba(50, 45, 25, 0.85) !important; }
+        .status-active { border-left-color: #ed4245 !important; background-color: rgba(60, 30, 30, 0.75) !important; }
+        .status-soon { border-left-color: #f1c40f !important; background-color: rgba(50, 45, 25, 0.75) !important; }
         .status-cd { border-left-color: #5865F2 !important; }
         .status-fixed { border-left-color: #9b59b6 !important; }
         
         .boss-info { flex-grow: 1; min-width: 220px; margin-right: 15px; }
         .boss-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-        .boss-name { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px black;}
-        .boss-meta { font-size: 0.75rem; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 10px; color: #eee; border: 1px solid rgba(255,255,255,0.1);}
-        .boss-loc { font-size: 0.9rem; color: #b9bbbe; }
+        .boss-name { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px black;} /* 加深陰影 */
+        .boss-meta { font-size: 0.75rem; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 10px; color: #eee; border: 1px solid rgba(255,255,255,0.1);}
+        .boss-loc { font-size: 0.9rem; color: #ccc; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); } /* 加深陰影 */
         
-        .boss-timer { font-size: 1.4rem; font-weight: bold; color: #dcddde; margin-top: 5px; font-family: 'Consolas', monospace; letter-spacing: 1px; text-shadow: 1px 1px 3px black;}
-        .highlight-text { color: #f1c40f; text-shadow: 0 0 8px rgba(241, 196, 15, 0.8); }
-        .boss-predict { font-size: 1rem; color: #43b581; margin-top: 5px; font-weight: bold; }
+        .boss-timer { font-size: 1.4rem; font-weight: bold; color: #fff; margin-top: 5px; font-family: 'Consolas', monospace; letter-spacing: 1px; text-shadow: 2px 2px 4px rgba(0,0,0,0.9);} /* 調亮顏色並加深陰影 */
+        .highlight-text { color: #f1c40f; text-shadow: 0 0 8px rgba(241, 196, 15, 0.8), 2px 2px 4px rgba(0,0,0,0.9); }
+        .boss-predict { font-size: 1rem; color: #43b581; margin-top: 5px; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
 
         .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 260px; justify-content: center;}
         .input-row { display: flex; gap: 5px; width: 100%; justify-content: flex-end;}
@@ -110,9 +111,9 @@
 
         .btn-update { background-color: #5865F2; padding: 8px 12px; width: auto; min-width: 80px;}
 
-        .auto-tag { background-color: rgba(0,0,0,0.5); border: 1px solid #9b59b6; color: #9b59b6; padding: 8px 15px; border-radius: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+        .auto-tag { background-color: rgba(0,0,0,0.6); border: 1px solid #9b59b6; color: #9b59b6; padding: 8px 15px; border-radius: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; font-weight: bold; }
 
-        .tip { font-size: 0.85rem; color: #888; margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-shadow: 1px 1px 2px black;}
+        .tip { font-size: 0.85rem; color: #bbb; margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);}
         #rescue-console { display: none; background: #500; color: #fff; padding: 20px; margin-bottom: 20px; border: 2px solid red; white-space: pre-wrap; font-size: 1rem; border-radius: 8px; }
 
         /* ================= 今日運勢抽卡功能 (CSS) ================= */
@@ -168,7 +169,7 @@
         .fortune-main-title { font-size: 2rem; margin: 0 0 20px 0; font-weight: bold; line-height: 1.2; }
         .fortune-desc { margin: 0; font-size: 1.05rem; line-height: 1.6; font-weight: bold; }
 
-        /* ======== 圖片套用 (改用全英文檔名以防破圖) ======== */
+        /* ======== 圖片套用 ======== */
         .theme-silver .card-back { background-image: url('silver-back.png'); background-color: #718093; }
         .theme-silver .card-front { background-image: url('silver-front.png'); background-color: #f5f6fa; }
         .theme-silver .card-front .fortune-type-label, 
@@ -228,8 +229,8 @@
     </div>
 
     <div class="tip">
-        <strong>v32.0 史詩級更新：</strong><br>
-        殿堂級公會視覺介面上線！小吉從此不再非酋，金卡保底！
+        <strong>v32.0 視覺調整</strong><br>
+        現在有漂亮的公會徽章跟背景圖啦！
     </div>
 </div>
 
@@ -584,7 +585,7 @@ function openFortuneModal() {
     
     const today = getTodayString();
     
-    // 【記憶鑰匙升級為 v6】強制讓新邏輯生效
+    // 【記憶鑰匙】維持 v6
     const savedData = localStorage.getItem('zenonia_fortune_v6'); 
     
     if (savedData) {
@@ -640,13 +641,12 @@ function flipCard() {
     document.getElementById('fortune-title').innerText = "您今日的專屬運勢";
 }
 
-// 【邏輯修正】只要字串裡包含「吉」這個字，一律判定為金卡
 function applyThemeToCard(fortune) {
     const card = document.getElementById('fortune-card');
     card.className = "card"; 
     
     if (fortune.type.includes('吉')) {
-        card.classList.add('theme-gold');     // 大吉、中吉、小吉都會進來這裡
+        card.classList.add('theme-gold');     
     } else if (fortune.type.includes('改運卡') || fortune.type.includes('特殊')) {
         card.classList.add('theme-color');    
     } else {
