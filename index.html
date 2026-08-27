@@ -168,8 +168,8 @@
     </div>
 
     <div class="tip">
-        <strong>v29.0 更新：</strong><br>
-        修復運勢卡片破圖問題，全新高畫質卡池正式上線！
+        <strong>v30.0 更新：</strong><br>
+        轉蛋機制再升級！看看你今天抽到什麼顏色的卡背！
     </div>
 </div>
 
@@ -556,6 +556,9 @@ const fortunes = [
     { type: "🔄 改運卡", title: "物理淨化卡", desc: "厄運纏身洗不掉？立刻到風哥面前誠心懇求他手起刀落送你上路，在榜一毀天滅地的傷害面前，你身上的非酋厄運將連同你的血條一起被瞬間蒸發！" }
 ];
 
+// 全局變數，用來暫存「已經決定好、但還沒翻開」的運勢
+window.stagedFortune = null;
+
 function getTodayString() {
     const now = new Date();
     return now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate();
@@ -570,26 +573,47 @@ function openFortuneModal() {
     
     const today = getTodayString();
     
-    // 【強制更新記憶鑰匙為 v4】徹底清除可能導致 TypeError 的舊版錯誤格式快取
-    const savedData = localStorage.getItem('zenonia_fortune_v4'); 
+    // 【記憶鑰匙升級為 v5】重置邏輯，並儲存「是否已翻牌」的狀態
+    const savedData = localStorage.getItem('zenonia_fortune_v5'); 
     
     if (savedData) {
         const parsed = JSON.parse(savedData);
         if (parsed.date === today) {
-            title.innerText = "您今日的專屬運勢";
+            // 今天已經有抽卡紀錄了
+            window.stagedFortune = parsed.fortune;
+            applyThemeToCard(window.stagedFortune);
+            applyTextToCard(window.stagedFortune);
             
-            // 將記憶裡的結果轉成對應的主題
-            applyThemeToCard(parsed.fortune);
-            applyTextToCard(parsed.fortune);
-            
-            card.classList.add('is-flipped');
+            if (parsed.isFlipped) {
+                // 已經翻開過了
+                title.innerText = "您今日的專屬運勢";
+                card.classList.add('is-flipped');
+            } else {
+                // 抽了但還沒點擊翻開 (可能中途關掉視窗)
+                title.innerText = "抽一張今日運勢";
+                card.classList.remove('is-flipped');
+            }
             return; 
         }
     }
     
-    // 如果今天還沒抽，預設顯示銀色背面（玩家也可以看到驚喜感）
+    // 如果今天完全沒抽過，立刻決定一張運勢！
+    const randomIndex = Math.floor(Math.random() * fortunes.length);
+    window.stagedFortune = fortunes[randomIndex];
+    
+    // 存入記憶體，標記為「未翻開 (isFlipped: false)」
+    localStorage.setItem('zenonia_fortune_v5', JSON.stringify({
+        date: today,
+        fortune: window.stagedFortune,
+        isFlipped: false
+    }));
+    
+    // 立刻套用卡背顏色，但不翻開
+    applyThemeToCard(window.stagedFortune);
+    applyTextToCard(window.stagedFortune);
+    
     title.innerText = "抽一張今日運勢";
-    card.className = "card theme-silver"; 
+    card.classList.remove('is-flipped'); 
 }
 
 function closeFortuneModal(event) {
@@ -603,18 +627,13 @@ function flipCard() {
     if (card.classList.contains('is-flipped')) return;
     
     const today = getTodayString();
-    const randomIndex = Math.floor(Math.random() * fortunes.length);
-    const result = fortunes[randomIndex];
     
-    // 寫入全新 v4 記憶
-    localStorage.setItem('zenonia_fortune_v4', JSON.stringify({
+    // 點擊翻開後，更新記憶體狀態為「已翻開 (isFlipped: true)」
+    localStorage.setItem('zenonia_fortune_v5', JSON.stringify({
         date: today,
-        fortune: result
+        fortune: window.stagedFortune,
+        isFlipped: true
     }));
-    
-    // 點擊瞬間套用對應的卡片圖檔（閃過一瞬間的稀有度提示），然後翻牌
-    applyThemeToCard(result);
-    applyTextToCard(result);
     
     card.classList.add('is-flipped');
     document.getElementById('fortune-title').innerText = "您今日的專屬運勢";
