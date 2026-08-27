@@ -89,7 +89,6 @@
         }
         .close-btn:hover { color: #fff; }
         
-        /* 調整卡片比例，使其更貼近您提供的精美圖檔比例 */
         .card-scene {
             width: 240px; height: 420px; margin: 15px auto 0;
             perspective: 1000px; cursor: pointer;
@@ -104,9 +103,7 @@
             position: absolute; width: 100%; height: 100%;
             backface-visibility: hidden; border-radius: 10px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            /* 調整內距避免文字壓到圖片華麗的邊框 */
             padding: 40px 30px; box-sizing: border-box; text-align: center;
-            /* 讓背景圖完美貼合卡片 */
             background-size: 100% 100%; background-position: center; background-repeat: no-repeat;
         }
         
@@ -114,33 +111,33 @@
             transform: rotateY(180deg);
         }
         
-        /* 移除預設的邊框與底色，全靠圖檔呈現 */
-        .card-front h2 { margin: 0 0 15px 0; }
-        .card-front p { margin: 0; font-size: 1rem; line-height: 1.6; font-weight: bold; }
-
-        .fortune-type-label { font-size: 1.1rem; display: block; margin-bottom: 8px; font-weight: normal; }
-        .fortune-main-title { font-size: 1.8rem; display: block; font-weight: bold; line-height: 1.2; }
+        /* 修正斷行：將文字獨立開來設定 */
+        .fortune-type-label { font-size: 1.1rem; margin-bottom: 8px; font-weight: bold; opacity: 0.9; }
+        .fortune-main-title { font-size: 1.8rem; margin: 0 0 15px 0; font-weight: bold; line-height: 1.2; }
+        .fortune-desc { margin: 0; font-size: 1rem; line-height: 1.6; font-weight: bold; }
 
         /* ======== 圖片套用與主題文字顏色 ======== */
         
         /* 【銀色：一般或凶卡】 */
         .theme-silver .card-back { background-image: url('銀色.png'); }
         .theme-silver .card-front { background-image: url('銀色正面.png'); }
-        .theme-silver .card-front h2 { color: #1e3799; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
-        .theme-silver .card-front p { color: #0a3d62; }
+        .theme-silver .card-front .fortune-type-label, 
+        .theme-silver .card-front .fortune-main-title { color: #1e3799; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
+        .theme-silver .card-front .fortune-desc { color: #0a3d62; }
 
         /* 【金色：金卡 (大吉/超吉)】 */
         .theme-gold .card-back { background-image: url('金色.png'); }
         .theme-gold .card-front { background-image: url('金色正面.png'); }
-        .theme-gold .card-front h2 { color: #b71540; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
-        .theme-gold .card-front p { color: #5c2c16; }
+        .theme-gold .card-front .fortune-type-label, 
+        .theme-gold .card-front .fortune-main-title { color: #b71540; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
+        .theme-gold .card-front .fortune-desc { color: #5c2c16; }
 
         /* 【彩色：改運卡/特殊】 */
-        /* 注意：此處完全依照您提供的檔名 '彩色正面.png' */
         .theme-color .card-back { background-image: url('彩色.png'); }
-        .theme-color .card-front { background-image: url('彩色正面.png'); }
-        .theme-color .card-front h2 { color: #fbc531; text-shadow: 0px 2px 4px rgba(0,0,0,0.8); }
-        .theme-color .card-front p { color: #ffffff; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); }
+        .theme-color .card-front { background-image: url('彩色正片.png'); }
+        .theme-color .card-front .fortune-type-label, 
+        .theme-color .card-front .fortune-main-title { color: #fbc531; text-shadow: 0px 2px 4px rgba(0,0,0,0.8); }
+        .theme-color .card-front .fortune-desc { color: #ffffff; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); }
         
         /* 點擊翻牌的隱約提示文字 (僅在背面顯示) */
         .click-hint {
@@ -172,8 +169,8 @@
     </div>
 
     <div class="tip">
-        <strong>v27.0 更新：</strong><br>
-        全新高級視覺卡牌實裝！今日您能抽出炫彩改運卡嗎？
+        <strong>v28.0 更新：</strong><br>
+        專屬「公會運勢與改運卡」排版再進化！快來試試今天的手氣！
     </div>
 </div>
 
@@ -185,14 +182,15 @@
         <div class="close-btn" onclick="closeFortuneModal(event)">✖</div>
         <h3 id="fortune-title" style="text-align:center; color:#fff; margin-top:0;">抽一張今日運勢</h3>
         <div class="card-scene" onclick="flipCard()">
-            <!-- 預設為銀色背面 -->
             <div id="fortune-card" class="card theme-silver">
                 <div class="card-face card-back">
                     <span class="click-hint">點擊翻牌</span>
                 </div>
+                <!-- 徹底獨立出運勢(type)和標題(title)的樓層 -->
                 <div class="card-face card-front">
-                    <h2 id="fortune-result-title"></h2>
-                    <p id="fortune-result-desc"></p>
+                    <div id="fortune-result-type" class="fortune-type-label"></div>
+                    <h2 id="fortune-result-title" class="fortune-main-title"></h2>
+                    <p id="fortune-result-desc" class="fortune-desc"></p>
                 </div>
             </div>
         </div>
@@ -639,10 +637,8 @@ function applyThemeToCard(fortune) {
 
 // 將文字印上卡片
 function applyTextToCard(fortune) {
-    const titleHtml = `<span class="fortune-type-label">${fortune.type}</span>` + 
-                      `<span class="fortune-main-title">${fortune.title}</span>`;
-                      
-    document.getElementById('fortune-result-title').innerHTML = titleHtml;
+    document.getElementById('fortune-result-type').innerText = fortune.type;
+    document.getElementById('fortune-result-title').innerText = fortune.title;
     document.getElementById('fortune-result-desc').innerText = fortune.desc;
 }
 // =======================================================
