@@ -115,7 +115,7 @@
         .fortune-main-title { font-size: 1.8rem; margin: 0 0 15px 0; font-weight: bold; line-height: 1.2; }
         .fortune-desc { margin: 0; font-size: 1rem; line-height: 1.6; font-weight: bold; }
 
-        /* ======== 圖片套用與主題文字顏色 (加入防呆底色) ======== */
+        /* ======== 圖片套用與主題文字顏色 ======== */
         
         /* 【銀色：一般或凶卡】 */
         .theme-silver .card-back { background-image: url('銀色.png'); background-color: #718093; }
@@ -132,8 +132,9 @@
         .theme-gold .card-front .fortune-desc { color: #5c2c16; }
 
         /* 【彩色：改運卡/特殊】 */
+        /* 已將檔名修正為：彩色正面.png */
         .theme-color .card-back { background-image: url('彩色.png'); background-color: #4b6cb7; }
-        .theme-color .card-front { background-image: url('彩色正片.png'); background-color: #e0c3fc; }
+        .theme-color .card-front { background-image: url('彩色正面.png'); background-color: #e0c3fc; }
         .theme-color .card-front .fortune-type-label, 
         .theme-color .card-front .fortune-main-title { color: #fbc531; text-shadow: 0px 2px 4px rgba(0,0,0,0.8); }
         .theme-color .card-front .fortune-desc { color: #ffffff; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); }
@@ -168,8 +169,8 @@
     </div>
 
     <div class="tip">
-        <strong>v30.0 更新：</strong><br>
-        轉蛋機制再升級！看看你今天抽到什麼顏色的卡背！
+        <strong>v31.0 更新：</strong><br>
+        轉蛋卡池圖檔修復！快來看看精緻的卡面吧！
     </div>
 </div>
 
@@ -556,7 +557,6 @@ const fortunes = [
     { type: "🔄 改運卡", title: "物理淨化卡", desc: "厄運纏身洗不掉？立刻到風哥面前誠心懇求他手起刀落送你上路，在榜一毀天滅地的傷害面前，你身上的非酋厄運將連同你的血條一起被瞬間蒸發！" }
 ];
 
-// 全局變數，用來暫存「已經決定好、但還沒翻開」的運勢
 window.stagedFortune = null;
 
 function getTodayString() {
@@ -573,23 +573,20 @@ function openFortuneModal() {
     
     const today = getTodayString();
     
-    // 【記憶鑰匙升級為 v5】重置邏輯，並儲存「是否已翻牌」的狀態
+    // 使用維持的 v5 記憶體
     const savedData = localStorage.getItem('zenonia_fortune_v5'); 
     
     if (savedData) {
         const parsed = JSON.parse(savedData);
         if (parsed.date === today) {
-            // 今天已經有抽卡紀錄了
             window.stagedFortune = parsed.fortune;
             applyThemeToCard(window.stagedFortune);
             applyTextToCard(window.stagedFortune);
             
             if (parsed.isFlipped) {
-                // 已經翻開過了
                 title.innerText = "您今日的專屬運勢";
                 card.classList.add('is-flipped');
             } else {
-                // 抽了但還沒點擊翻開 (可能中途關掉視窗)
                 title.innerText = "抽一張今日運勢";
                 card.classList.remove('is-flipped');
             }
@@ -597,18 +594,15 @@ function openFortuneModal() {
         }
     }
     
-    // 如果今天完全沒抽過，立刻決定一張運勢！
     const randomIndex = Math.floor(Math.random() * fortunes.length);
     window.stagedFortune = fortunes[randomIndex];
     
-    // 存入記憶體，標記為「未翻開 (isFlipped: false)」
     localStorage.setItem('zenonia_fortune_v5', JSON.stringify({
         date: today,
         fortune: window.stagedFortune,
         isFlipped: false
     }));
     
-    // 立刻套用卡背顏色，但不翻開
     applyThemeToCard(window.stagedFortune);
     applyTextToCard(window.stagedFortune);
     
@@ -628,7 +622,6 @@ function flipCard() {
     
     const today = getTodayString();
     
-    // 點擊翻開後，更新記憶體狀態為「已翻開 (isFlipped: true)」
     localStorage.setItem('zenonia_fortune_v5', JSON.stringify({
         date: today,
         fortune: window.stagedFortune,
@@ -639,21 +632,19 @@ function flipCard() {
     document.getElementById('fortune-title').innerText = "您今日的專屬運勢";
 }
 
-// 根據抽卡結果套用對應的圖片主題 (金、銀、彩色)
 function applyThemeToCard(fortune) {
     const card = document.getElementById('fortune-card');
-    card.className = "card"; // 清除所有主題
+    card.className = "card"; 
     
     if (fortune.type.includes('大吉') || fortune.type.includes('超吉')) {
-        card.classList.add('theme-gold');     // 金卡
+        card.classList.add('theme-gold');     
     } else if (fortune.type.includes('改運卡') || fortune.type.includes('特殊')) {
-        card.classList.add('theme-color');    // 彩色卡
+        card.classList.add('theme-color');    
     } else {
-        card.classList.add('theme-silver');   // 銀卡 (一般/凶)
+        card.classList.add('theme-silver');   
     }
 }
 
-// 將文字印上卡片
 function applyTextToCard(fortune) {
     document.getElementById('fortune-result-type').innerText = fortune.type;
     document.getElementById('fortune-result-title').innerText = fortune.title;
