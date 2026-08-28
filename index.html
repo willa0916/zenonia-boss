@@ -19,8 +19,8 @@
             color: #dcddde; 
             margin: 0; 
             padding: 20px; 
-            /* 【修改點】降低深色遮罩的透明度，從 0.85 降到 0.65，讓背景圖更明顯 */
-            background-image: linear-gradient(rgba(15, 15, 20, 0.65), rgba(15, 15, 20, 0.65)), url('bg.png');
+            /* 套用公會專屬背景，並加上深色半透明遮罩確保文字清晰 */
+            background-image: linear-gradient(rgba(15, 15, 20, 0.85), rgba(15, 15, 20, 0.85)), url('bg.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -53,9 +53,8 @@
             display: flex;
             align-items: center;
             font-size: 0.85rem;
-            color: #ccc; /* 配合背景調亮字體 */
+            color: #aaa;
             margin-top: -5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* 增加文字陰影確保可讀性 */
         }
         .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
         .online { background-color: #43b581; box-shadow: 0 0 5px #43b581; }
@@ -73,8 +72,7 @@
         
         /* ================= BOSS 卡片區塊 ================= */
         .boss-card { 
-            /* 【修改點】讓卡片本身也變透明一點，從 0.85 降到 0.7，透出更多背景細節 */
-            background-color: rgba(47, 49, 54, 0.7); 
+            background-color: rgba(47, 49, 54, 0.85); 
             backdrop-filter: blur(5px);
             padding: 12px 18px; 
             margin-bottom: 12px; 
@@ -87,22 +85,22 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
             transition: all 0.3s; 
         }
-        .boss-card:hover { transform: translateX(5px); background-color: rgba(47, 49, 54, 0.85); }
+        .boss-card:hover { transform: translateX(5px); background-color: rgba(47, 49, 54, 0.95); }
         
-        .status-active { border-left-color: #ed4245 !important; background-color: rgba(60, 30, 30, 0.75) !important; }
-        .status-soon { border-left-color: #f1c40f !important; background-color: rgba(50, 45, 25, 0.75) !important; }
+        .status-active { border-left-color: #ed4245 !important; background-color: rgba(60, 30, 30, 0.85) !important; }
+        .status-soon { border-left-color: #f1c40f !important; background-color: rgba(50, 45, 25, 0.85) !important; }
         .status-cd { border-left-color: #5865F2 !important; }
         .status-fixed { border-left-color: #9b59b6 !important; }
         
         .boss-info { flex-grow: 1; min-width: 220px; margin-right: 15px; }
         .boss-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-        .boss-name { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px black;} /* 加深陰影 */
-        .boss-meta { font-size: 0.75rem; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 10px; color: #eee; border: 1px solid rgba(255,255,255,0.1);}
-        .boss-loc { font-size: 0.9rem; color: #ccc; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); } /* 加深陰影 */
+        .boss-name { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px black;}
+        .boss-meta { font-size: 0.75rem; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 10px; color: #eee; border: 1px solid rgba(255,255,255,0.1);}
+        .boss-loc { font-size: 0.9rem; color: #b9bbbe; }
         
-        .boss-timer { font-size: 1.4rem; font-weight: bold; color: #fff; margin-top: 5px; font-family: 'Consolas', monospace; letter-spacing: 1px; text-shadow: 2px 2px 4px rgba(0,0,0,0.9);} /* 調亮顏色並加深陰影 */
-        .highlight-text { color: #f1c40f; text-shadow: 0 0 8px rgba(241, 196, 15, 0.8), 2px 2px 4px rgba(0,0,0,0.9); }
-        .boss-predict { font-size: 1rem; color: #43b581; margin-top: 5px; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        .boss-timer { font-size: 1.4rem; font-weight: bold; color: #dcddde; margin-top: 5px; font-family: 'Consolas', monospace; letter-spacing: 1px; text-shadow: 1px 1px 3px black;}
+        .highlight-text { color: #f1c40f; text-shadow: 0 0 8px rgba(241, 196, 15, 0.8); }
+        .boss-predict { font-size: 1rem; color: #43b581; margin-top: 5px; font-weight: bold; }
 
         .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 260px; justify-content: center;}
         .input-row { display: flex; gap: 5px; width: 100%; justify-content: flex-end;}
@@ -111,9 +109,9 @@
 
         .btn-update { background-color: #5865F2; padding: 8px 12px; width: auto; min-width: 80px;}
 
-        .auto-tag { background-color: rgba(0,0,0,0.6); border: 1px solid #9b59b6; color: #9b59b6; padding: 8px 15px; border-radius: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; font-weight: bold; }
+        .auto-tag { background-color: rgba(0,0,0,0.5); border: 1px solid #9b59b6; color: #9b59b6; padding: 8px 15px; border-radius: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
 
-        .tip { font-size: 0.85rem; color: #bbb; margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);}
+        .tip { font-size: 0.85rem; color: #888; margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-shadow: 1px 1px 2px black;}
         #rescue-console { display: none; background: #500; color: #fff; padding: 20px; margin-bottom: 20px; border: 2px solid red; white-space: pre-wrap; font-size: 1rem; border-radius: 8px; }
 
         /* ================= 今日運勢抽卡功能 (CSS) ================= */
@@ -169,7 +167,7 @@
         .fortune-main-title { font-size: 2rem; margin: 0 0 20px 0; font-weight: bold; line-height: 1.2; }
         .fortune-desc { margin: 0; font-size: 1.05rem; line-height: 1.6; font-weight: bold; }
 
-        /* ======== 圖片套用 ======== */
+        /* ======== 圖片套用與顏色設定 ======== */
         .theme-silver .card-back { background-image: url('silver-back.png'); background-color: #718093; }
         .theme-silver .card-front { background-image: url('silver-front.png'); background-color: #f5f6fa; }
         .theme-silver .card-front .fortune-type-label, 
@@ -186,7 +184,9 @@
         .theme-color .card-front { background-image: url('color-front.png'); background-color: #e0c3fc; }
         .theme-color .card-front .fortune-type-label, 
         .theme-color .card-front .fortune-main-title { color: #fbc531; text-shadow: 0px 2px 4px rgba(0,0,0,0.8); }
-        .theme-color .card-front .fortune-desc { color: #ffffff; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); }
+        
+        /* 【修改點】調整彩卡說明文字為深色，增加白底微光陰影，提升可讀性 */
+        .theme-color .card-front .fortune-desc { color: #130f40; text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.9), 0px 0px 5px rgba(255, 255, 255, 0.6); }
         
         .click-hint {
             position: absolute; bottom: 35px; font-size: 1rem; color: rgba(255,255,255,0.8);
@@ -229,8 +229,8 @@
     </div>
 
     <div class="tip">
-        <strong>v32.0 視覺調整</strong><br>
-        現在有漂亮的公會徽章跟背景圖啦！
+        <strong>v32.2 體驗優化：</strong><br>
+        增強卡片文字閱讀體驗，隨時掌握冰媽的溫馨提醒！
     </div>
 </div>
 
@@ -566,7 +566,8 @@ const fortunes = [
     { type: "🔮 特殊", title: "掛機的奧義", desc: "你意外領悟了守羌的掛機真傳。今日若在打野王時完全放開雙手假裝去炒飯，BOSS 將有極高機率把你當成場景物件不攻擊你。" },
     { type: "🔄 改運卡", title: "課金改命卡", desc: "覺得今天非氣纏身？立刻向永遠 18 歲的木木獻上 666 鑽，即可啟動神秘的改運陣法。心誠則靈，運勢重新洗牌！" },
     { type: "🔄 改運卡", title: "祭品召喚卡", desc: "運氣太差怎麼辦？立即出發討伐冰媽全家，吸收滿滿的「祭品之力」，用最殘暴的方式強行把幸運值拉滿！" },
-    { type: "🔄 改運卡", title: "物理淨化卡", desc: "厄運纏身洗不掉？立刻到風哥面前誠心懇求他手起刀落送你上路，在榜一毀天滅地的傷害面前，你身上的非酋厄運將連同你的血條一起被瞬間蒸發！" }
+    { type: "🔄 改運卡", title: "物理淨化卡", desc: "厄運纏身洗不掉？立刻到風哥面前誠心懇求他手起刀落送你上路，在榜一毀天滅地的傷害面前，你身上的非酋厄運將連同你的血條一起被瞬間蒸發！" },
+    { type: "🌧️ 小凶", title: "冰媽的提醒", desc: "今日水逆Debuff發作，極易觸發隱藏陷阱「冰媽的碎念」。唯一解法就是看到老媽子發話時，務必在一分鐘內回覆「好的，有冰媽的孩子像寶」。若敢已讀不回，分分鐘把你流放到一般騎士面壁思過！" }
 ];
 
 window.stagedFortune = null;
