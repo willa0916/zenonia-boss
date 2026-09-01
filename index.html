@@ -246,7 +246,7 @@
     </div>
 
     <div class="tip">
-        <strong>v34.1 修復與更新：</strong><br>
+        <strong>v34.2 趣味更新：</strong><br>
         法國賭神「迪卡皮箱」降臨！抽到大凶別怕，大喊「窩要驗排」爭取 25% 翻盤機會！
     </div>
 </div>
@@ -555,7 +555,10 @@ function getSortedList() {
 
 function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
-    let text = isCodeBlock ? "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n" : "";
+    let text = "";
+    if(isCodeBlock) {
+        text += "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
+    }
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -569,7 +572,8 @@ function formatListText(list, isCodeBlock = true) {
             text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
         }
     });
-    return text + (isCodeBlock ? "```" : "");
+    if(isCodeBlock) text += "```";
+    return text;
 }
 
 // ================= 今日運勢功能 (JavaScript) =================
@@ -608,6 +612,7 @@ function openFortuneModal() {
     
     modal.style.display = 'flex';
     
+    // 【記憶鑰匙 v8】實裝驗牌系統
     const savedData = localStorage.getItem('zenonia_fortune_v8'); 
     
     if (savedData) {
