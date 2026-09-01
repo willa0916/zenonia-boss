@@ -130,7 +130,6 @@
             backdrop-filter: blur(8px);
         }
         
-        /* 將 Modal 內容包起來，方便加入驗牌按鈕 */
         .modal-content-wrapper {
             display: flex; flex-direction: column; align-items: center;
             max-width: 350px; width: 90%;
@@ -247,8 +246,8 @@
     </div>
 
     <div class="tip">
-        <strong>v34.0 趣味更新：</strong><br>
-        法國賭神「迪卡皮箱」降臨！抽到大凶別怕，大喊「窩要驗排」爭取翻盤機會！
+        <strong>v34.1 修復與更新：</strong><br>
+        法國賭神「迪卡皮箱」降臨！抽到大凶別怕，大喊「窩要驗牌」爭取翻盤機會！
     </div>
 </div>
 
@@ -274,7 +273,7 @@
             </div>
         </div>
         <!-- 新增驗牌按鈕 -->
-        <button id="verify-btn" onclick="verifyCard(event)">🕵️ 窩要驗排！(25%機率重抽)</button>
+        <button id="verify-btn" onclick="verifyCard(event)">🕵️ 窩要驗牌！(25%機率重抽)</button>
     </div>
 </div>
 
@@ -556,8 +555,7 @@ function getSortedList() {
 
 function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
-    let text = isCodeBlock ? "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n
-```diff\n" : "";
+    let text = isCodeBlock ? "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n" : "";
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -571,8 +569,7 @@ function formatListText(list, isCodeBlock = true) {
             text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
         }
     });
-    return text + (isCodeBlock ? "
-```" : "");
+    return text + (isCodeBlock ? "```" : "");
 }
 
 // ================= 今日運勢功能 (JavaScript) =================
@@ -611,7 +608,6 @@ function openFortuneModal() {
     
     modal.style.display = 'flex';
     
-    // 【記憶鑰匙 v8】實裝驗牌系統
     const savedData = localStorage.getItem('zenonia_fortune_v8'); 
     
     if (savedData) {
@@ -624,7 +620,6 @@ function openFortuneModal() {
             if (parsed.isFlipped) {
                 title.innerText = "您今日的專屬運勢";
                 card.classList.add('is-flipped');
-                // 檢查是否要顯示驗牌按鈕 (僅限翻開且是凶卡，且還沒驗過牌)
                 if (window.stagedFortune.type.includes('凶')) {
                     if (parsed.verifyUsed) {
                         verifyBtn.style.display = 'block';
@@ -633,7 +628,7 @@ function openFortuneModal() {
                     } else {
                         verifyBtn.style.display = 'block';
                         verifyBtn.className = '';
-                        verifyBtn.innerText = '🕵️ 窩要驗排！(25%機率重抽)';
+                        verifyBtn.innerText = '🕵️ 窩要驗牌！(25%機率重抽)';
                     }
                 } else {
                     verifyBtn.style.display = 'none';
@@ -658,10 +653,9 @@ function drawNewCard(isVerifyReroll = false) {
         date: getTodayString(),
         fortune: window.stagedFortune,
         isFlipped: false,
-        verifyUsed: false // 預設還沒使用過驗牌功能
+        verifyUsed: false
     };
     
-    // 如果是驗牌成功帶來的重抽，保留已驗牌的紀錄（避免無限重抽）
     if (isVerifyReroll) {
         saveData.verifyUsed = true;
     }
@@ -673,7 +667,7 @@ function drawNewCard(isVerifyReroll = false) {
     
     document.getElementById('fortune-title').innerText = "抽一張今日運勢";
     document.getElementById('fortune-card').classList.remove('is-flipped'); 
-    document.getElementById('verify-btn').style.display = 'none'; // 抽卡階段隱藏按鈕
+    document.getElementById('verify-btn').style.display = 'none';
 }
 
 function closeFortuneModal(event) {
@@ -685,7 +679,6 @@ function flipCard() {
     const card = document.getElementById('fortune-card');
     if (card.classList.contains('is-flipped')) return;
     
-    // 讀取當前狀態
     const savedData = JSON.parse(localStorage.getItem('zenonia_fortune_v8'));
     savedData.isFlipped = true;
     localStorage.setItem('zenonia_fortune_v8', JSON.stringify(savedData));
@@ -693,40 +686,783 @@ function flipCard() {
     card.classList.add('is-flipped');
     document.getElementById('fortune-title').innerText = "您今日的專屬運勢";
     
-    // 如果翻開是凶卡，且還沒驗過牌，就顯示驗牌按鈕
     if (window.stagedFortune.type.includes('凶') && !savedData.verifyUsed) {
         const verifyBtn = document.getElementById('verify-btn');
         verifyBtn.style.display = 'block';
         verifyBtn.className = '';
-        verifyBtn.innerText = '🕵️ 窩要驗排！(25%機率重抽)';
+        verifyBtn.innerText = '🕵️ 窩要驗牌！(25%機率重抽)';
     }
 }
 
-// 【新增】窩要驗牌功能
 function verifyCard(event) {
-    event.stopPropagation(); // 避免點擊到背景關閉視窗
+    event.stopPropagation(); 
     
     const btn = document.getElementById('verify-btn');
-    if (btn.classList.contains('failed')) return; // 已經失敗就不給按了
+    if (btn.classList.contains('failed')) return; 
     
     const savedData = JSON.parse(localStorage.getItem('zenonia_fortune_v8'));
-    savedData.verifyUsed = true; // 標記為已驗牌
+    savedData.verifyUsed = true; 
     
-    // 25% 的機率成功
     const isSuccess = Math.random() < 0.25;
     
     if (isSuccess) {
         alert("🎉 驗牌成功！發牌員手抖了，讓你重抽一次！");
-        // 把卡片翻回背面
         document.getElementById('fortune-card').classList.remove('is-flipped');
         
-        // 延遲一點點時間重新抽卡，讓翻面動畫跑完
         setTimeout(() => {
-            drawNewCard(true); // 傳入 true 代表這是驗牌換來的重抽
+            drawNewCard(true); 
         }, 300);
         
     } else {
-        // 驗牌失敗
+        btn.classList.add('failed');
+        btn.innerText = '🙅 拍妹幽問題！';
+        localStorage.setItem('zenonia_fortune_v8', JSON.stringify(savedData));
+    }
+}
+
+function applyThemeToCard(fortune) {
+    const card = document.getElementById('fortune-card');
+    card.className = "card"; 
+    
+    if (fortune.type.includes('吉')) {
+        card.classList.add('theme-gold');     
+    } else if (fortune.type.includes('改運卡') || fortune.type.includes('特殊')) {
+        card.classList.add('theme-color');    
+    } else {
+        card.classList.add('theme-silver');   
+    }
+}
+
+function applyTextToCard(fortune) {
+    document.getElementById('fortune-result-type').innerText = fortune.type;
+    document.getElementById('fortune-result-title').innerText = fortune.title;
+    document.getElementById('fortune-result-desc').innerText = fortune.desc;
+}
+// =======================================================
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:;">
+    <title>月歸夜 - 打王時間表</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <style>
+        /* ================= 基礎與背景設定 ================= */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            color: #dcddde; 
+            margin: 0; 
+            padding: 20px; 
+            background-image: linear-gradient(rgba(15, 15, 20, 0.65), rgba(15, 15, 20, 0.65)), url('bg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+        
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        /* ================= 頂部 LOGO 與按鈕區 ================= */
+        .header-area { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid rgba(255,255,255,0.1); 
+            padding-bottom: 20px; 
+            gap: 15px; 
+        }
+        
+        .guild-logo {
+            max-width: 280px; 
+            width: 80%;       
+            height: auto;
+            filter: drop-shadow(0px 0px 15px rgba(138, 43, 226, 0.6)); 
+        }
+
+        .status-container {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #ccc;
+            margin-top: -5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .online { background-color: #43b581; box-shadow: 0 0 5px #43b581; }
+        .offline { background-color: #ed4245; }
+        
+        .action-buttons {
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+        }
+        
+        .btn { border: none; padding: 10px 18px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; font-size: 0.9rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
+        .btn-copy { background-color: #43b581; } 
+        .btn-reset { background-color: #ed4245; font-size: 0.8rem;}
+        .btn-discord { background-color: #5865F2; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.4); filter: brightness(1.1);}
+        
+        /* ================= BOSS 卡片區塊 ================= */
+        .boss-card { 
+            background-color: rgba(47, 49, 54, 0.7); 
+            backdrop-filter: blur(5px);
+            padding: 12px 18px; 
+            margin-bottom: 12px; 
+            border-radius: 8px; 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-left: 6px solid #72767d; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
+            transition: all 0.3s; 
+        }
+        .boss-card:hover { transform: translateX(5px); background-color: rgba(47, 49, 54, 0.85); }
+        
+        .status-active { border-left-color: #ed4245 !important; background-color: rgba(60, 30, 30, 0.75) !important; }
+        .status-soon { border-left-color: #f1c40f !important; background-color: rgba(50, 45, 25, 0.75) !important; }
+        .status-cd { border-left-color: #5865F2 !important; }
+        .status-fixed { border-left-color: #9b59b6 !important; }
+        
+        .boss-info { flex-grow: 1; min-width: 220px; margin-right: 15px; }
+        .boss-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .boss-name { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px black;}
+        .boss-meta { font-size: 0.75rem; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 10px; color: #eee; border: 1px solid rgba(255,255,255,0.1);}
+        .boss-loc { font-size: 0.9rem; color: #ccc; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        
+        .boss-timer { font-size: 1.4rem; font-weight: bold; color: #fff; margin-top: 5px; font-family: 'Consolas', monospace; letter-spacing: 1px; text-shadow: 2px 2px 4px rgba(0,0,0,0.9);}
+        .highlight-text { color: #f1c40f; text-shadow: 0 0 8px rgba(241, 196, 15, 0.8), 2px 2px 4px rgba(0,0,0,0.9); }
+        .boss-predict { font-size: 1rem; color: #43b581; margin-top: 5px; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+
+        .input-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 260px; justify-content: center;}
+        .input-row { display: flex; gap: 5px; width: 100%; justify-content: flex-end;}
+        
+        input.flatpickr-input { background: rgba(0,0,0,0.6); border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.95rem; cursor: pointer; width: 140px; text-align: center; }
+
+        .btn-update { background-color: #5865F2; padding: 8px 12px; width: auto; min-width: 80px;}
+
+        .auto-tag { background-color: rgba(0,0,0,0.6); border: 1px solid #9b59b6; color: #9b59b6; padding: 8px 15px; border-radius: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; font-weight: bold; }
+
+        .tip { font-size: 0.85rem; color: #bbb; margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);}
+        #rescue-console { display: none; background: #500; color: #fff; padding: 20px; margin-bottom: 20px; border: 2px solid red; white-space: pre-wrap; font-size: 1rem; border-radius: 8px; }
+
+        /* ================= 今日運勢抽卡功能 (CSS) ================= */
+        #fortune-fab {
+            position: fixed; bottom: 25px; right: 25px;
+            background: linear-gradient(135deg, #f1c40f, #e67e22); color: #fff;
+            border: 2px solid #fff; border-radius: 50px;
+            padding: 14px 24px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+            transition: all 0.2s; z-index: 999; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        #fortune-fab:hover { transform: scale(1.08) translateY(-5px); filter: brightness(1.2); }
+        
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 1000;
+            justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        
+        .modal-content-wrapper {
+            display: flex; flex-direction: column; align-items: center;
+            max-width: 350px; width: 90%;
+        }
+        
+        .fortune-container {
+            background: rgba(20, 20, 25, 0.9); padding: 25px; border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9); position: relative;
+            width: 100%; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .close-btn {
+            position: absolute; top: 10px; right: 15px; color: #888;
+            cursor: pointer; font-size: 1.5rem; z-index: 10; transition: 0.2s;
+        }
+        .close-btn:hover { color: #fff; transform: scale(1.2); }
+        
+        .card-scene {
+            width: 260px; height: 450px; margin: 15px auto 0;
+            perspective: 1000px; cursor: pointer;
+        }
+        .card {
+            width: 100%; height: 100%; position: relative;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        .card.is-flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; border-radius: 12px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 45px 35px; box-sizing: border-box; text-align: center;
+            background-size: 100% 100%; background-position: center; background-repeat: no-repeat;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+        
+        .card-front { transform: rotateY(180deg); }
+        
+        .fortune-type-label { font-size: 1.2rem; margin-bottom: 10px; font-weight: bold; opacity: 0.9; }
+        .fortune-main-title { font-size: 2rem; margin: 0 0 20px 0; font-weight: bold; line-height: 1.2; }
+        .fortune-desc { margin: 0; font-size: 1.05rem; line-height: 1.6; font-weight: bold; }
+
+        /* ======== 圖片套用與顏色設定 ======== */
+        .theme-silver .card-back { background-image: url('silver-back.png'); background-color: #718093; }
+        .theme-silver .card-front { background-image: url('silver-front.png'); background-color: #f5f6fa; }
+        .theme-silver .card-front .fortune-type-label, 
+        .theme-silver .card-front .fortune-main-title { color: #1e3799; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
+        .theme-silver .card-front .fortune-desc { color: #0a3d62; }
+
+        .theme-gold .card-back { background-image: url('gold-back.png'); background-color: #e1b12c; }
+        .theme-gold .card-front { background-image: url('gold-front.png'); background-color: #fff9e6; }
+        .theme-gold .card-front .fortune-type-label, 
+        .theme-gold .card-front .fortune-main-title { color: #b71540; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
+        .theme-gold .card-front .fortune-desc { color: #5c2c16; }
+
+        .theme-color .card-back { background-image: url('color-back.png'); background-color: #4b6cb7; }
+        .theme-color .card-front { background-image: url('color-front.png'); background-color: #e0c3fc; }
+        .theme-color .card-front .fortune-type-label, 
+        .theme-color .card-front .fortune-main-title { color: #fbc531; text-shadow: 0px 2px 4px rgba(0,0,0,0.8); }
+        .theme-color .card-front .fortune-desc { color: #130f40; text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.9), 0px 0px 5px rgba(255, 255, 255, 0.6); }
+        
+        .click-hint {
+            position: absolute; bottom: 35px; font-size: 1rem; color: rgba(255,255,255,0.8);
+            text-shadow: 0 0 8px rgba(0,0,0,1); font-weight: bold; letter-spacing: 3px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.5; transform: scale(0.95); }
+        }
+        
+        /* 驗牌按鈕樣式 */
+        #verify-btn {
+            display: none;
+            margin-top: 15px;
+            background: linear-gradient(135deg, #1e3799, #0a3d62); color: #fff;
+            border: 1px solid #718093; border-radius: 8px;
+            padding: 12px 20px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            transition: all 0.2s; width: 100%; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+        }
+        #verify-btn:hover { filter: brightness(1.2); }
+        #verify-btn.failed {
+            background: linear-gradient(135deg, #b71540, #5c2c16);
+            border-color: #ed4245; cursor: not-allowed;
+            filter: brightness(0.8);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="rescue-console"></div>
+
+    <div class="header-area">
+        <img src="logo.png" alt="月歸夜 LOGO" class="guild-logo" onerror="this.style.display='none'">
+        
+        <div class="status-container">
+            <span id="conn-status" class="status-dot"></span> 資料庫連線狀態
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-reset" onclick="hardReset()">⚠️ 強制重置</button>
+            <button class="btn btn-copy" onclick="copyToClipboard()">📋 複製文字</button>
+            <button class="btn btn-discord" onclick="sendToDiscord()">🚀 發送到 Discord</button>
+        </div>
+    </div>
+
+    <div id="bossList">
+        <div style="text-align:center; padding: 50px; color: #aaa; text-shadow: 1px 1px 2px black;">
+            正在進入月歸夜的殿堂，載入資料中...
+        </div>
+    </div>
+
+    <div class="tip">
+        <strong>v34.1 修復與更新：</strong><br>
+        法國賭神「迪卡皮箱」降臨！抽到大凶別怕，大喊「窩要驗牌」爭取 25% 翻盤機會！
+    </div>
+</div>
+
+<!-- ================= 今日運勢功能 (HTML) ================= -->
+<button id="fortune-fab" onclick="openFortuneModal()">🎴 今日運勢</button>
+
+<div id="fortune-modal" class="modal-overlay" onclick="closeFortuneModal(event)">
+    <div class="modal-content-wrapper">
+        <div class="fortune-container" onclick="event.stopPropagation()">
+            <div class="close-btn" onclick="closeFortuneModal(event)">✖</div>
+            <h3 id="fortune-title" style="text-align:center; color:#fff; margin-top:0; letter-spacing: 2px;">抽一張今日運勢</h3>
+            <div class="card-scene" onclick="flipCard()">
+                <div id="fortune-card" class="card theme-silver">
+                    <div class="card-face card-back">
+                        <span class="click-hint">點擊翻牌</span>
+                    </div>
+                    <div class="card-face card-front">
+                        <div id="fortune-result-type" class="fortune-type-label"></div>
+                        <h2 id="fortune-result-title" class="fortune-main-title"></h2>
+                        <p id="fortune-result-desc" class="fortune-desc"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 新增驗牌按鈕 -->
+        <button id="verify-btn" onclick="verifyCard(event)">🕵️ 窩要驗牌！(25%機率重抽)</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
+
+<script>
+// ==========================================
+// 【系統設定區】
+// ==========================================
+const firebaseConfig = {
+    apiKey: "AIzaSyAD48KJ3oobOE3IQX7o9WhF1eRC-Zd2J24",
+    authDomain: "game-7c96b.firebaseapp.com",
+    databaseURL: "https://game-7c96b-default-rtdb.firebaseio.com",
+    projectId: "game-7c96b",
+    storageBucket: "game-7c96b.firebasestorage.app",
+    messagingSenderId: "325794018538",
+    appId: "1:325794018538:web:3fa748f4f541f227579393"
+};
+
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1458746934226452685/WSJ6oiWJL63p8-hvxPRCkBSBOQ-_dCFOGSVSte_nkvjXgipbWFyrEUDDHsiyXNNIokKX";
+
+window.onerror = function(msg, url, line, col, error) {
+    const box = document.getElementById('rescue-console');
+    box.style.display = 'block';
+    box.innerHTML = `<h3>🚨 程式發生錯誤</h3><p>${msg}</p><p>位置: Line ${line}</p>`;
+    return false;
+};
+
+let db;
+try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+} catch (e) {
+    window.onerror(e.message, "", 0);
+}
+
+const connectedRef = firebase.database().ref(".info/connected");
+connectedRef.on("value", (snap) => {
+    const el = document.getElementById('conn-status');
+    if (snap.val() === true) {
+        el.className = "status-dot online";
+    } else {
+        el.className = "status-dot offline";
+    }
+});
+
+const rawData = [
+    { name: "埃奇納德(25)", cd: 24, type: "fixed", loc: "瑪魯森林", fixTime: "12:00" },
+    { name: "斯吉拉(30)", cd: 24, type: "fixed", loc: "雲之高原", fixTime: "14:00" },
+    { name: "蜥蜴人國王(35)", cd: 24, type: "fixed", loc: "艾拉溫溪谷", fixTime: "16:00" },
+    { name: "亞爾貢(40)", cd: 24, type: "fixed", loc: "火紅荒野", fixTime: "18:00" },
+    { name: "博卡頓(45)", cd: 24, type: "fixed", loc: "業報3F", fixTime: "20:00" },
+    { name: "泰米爾(48)", cd: 24, type: "fixed", loc: "尼夫萊爾城", fixTime: "22:00" },
+    
+    { name: "武庫拉(50)", cd: 13.5, type: "cd", loc: "倒轉艾拉溫溪谷", initTime: "1/8 12:00" },
+    { name: "格里貢(55)", cd: 12, type: "cd", loc: "倒轉火紅荒野", initTime: "1/8 12:00" },
+    { name: "帕提洛斯(60)", cd: 6, type: "cd", loc: "倒轉卡納克峽谷", initTime: "1/8 12:00" },
+    { name: "EZ-09(62)", cd: 12, type: "cd", loc: "倒轉古代遺跡", initTime: "1/8 12:00" },
+    { name: "布萊登(63)", cd: 18, type: "cd", loc: "業報6F", initTime: "1/8 12:00" },
+    { name: "普魯特(65)", cd: 6, type: "cd", loc: "地獄3F", initTime: "1/8 12:00" },
+    { name: "哈尼文(68)", cd: 18, type: "cd", loc: "瑪勒薩海岸", initTime: "1/8 12:00" },
+    { name: "維瑟斯(72)", cd: 9, type: "cd", loc: "拉米斯森林", initTime: "1/8 12:00" },
+    { name: "佩爾(77)", cd: 24, type: "cd", loc: "罪惡3F", initTime: "1/8 12:00" },
+    { name: "亞拉金(78)", cd: 24, type: "cd", loc: "雷歐城", initTime: "1/8 12:00" }, 
+    { name: "卡威因(85)", cd: 24, type: "cd", loc: "恥辱的神廟", initTime: "1/8 12:00" },
+    
+    { name: "厄瑞玻斯(87) [50%機率]", cd: 12, type: "cd", loc: "德瓦森林", initTime: "1/8 12:00" },
+    { name: "拉頓的幻影(90)", cd: 48, type: "cd", loc: "海市蜃樓頂層", initTime: "1/8 12:00" },
+    { name: "雷斯(94) [50%機率]", cd: 12, type: "cd", loc: "比帕提山脈", initTime: "1/8 12:00" },
+    { name: "希歐多爾(104) [50%機率]", cd: 12, type: "cd", loc: "拉卡廢墟", initTime: "1/8 12:00" },
+    { name: "索尼安(112) [50%機率]", cd: 12, type: "cd", loc: "巴普勒", initTime: "1/8 12:00" }
+];
+
+let bosses = [];
+
+function parseInitTime(str) {
+    if(!str) return null;
+    try {
+        const now = new Date();
+        let year = now.getFullYear();
+        let month = now.getMonth();
+        let day = now.getDate();
+        let dPart = "", tPart = str;
+        if(str.includes(' ')) { const sp = str.split(' '); dPart = sp[0]; tPart = sp[1]; }
+        if(dPart && dPart.includes('/')) { const dp = dPart.split('/'); month = parseInt(dp[0]) - 1; day = parseInt(dp[1]); }
+        const tp = tPart.split(':');
+        return new Date(year, month, day, parseInt(tp[0]), parseInt(tp[1]), 0).getTime();
+    } catch(e) { return null; }
+}
+
+function init() {
+    db.ref('bosses').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+            bosses = val;
+            if(bosses.length < rawData.length) mergeNewBosses();
+        } else {
+            loadDefaults();
+        }
+        recalcFixedBosses();
+        renderStaticList();
+        updateTimers();
+    }, (error) => {
+        window.onerror("讀取資料失敗: " + error.message, "", 0);
+    });
+
+    setInterval(() => {
+        recalcFixedBosses();
+        updateTimers();
+    }, 1000);
+}
+
+function mergeNewBosses() {
+    let updated = false;
+    rawData.forEach((newBoss, idx) => {
+        const exists = bosses.find(b => b.name === newBoss.name);
+        if (!exists) {
+            bosses.push({ ...newBoss, id: idx, nextSpawn: newBoss.type === 'fixed' ? null : parseInitTime(newBoss.initTime) });
+            updated = true;
+        }
+    });
+    if (updated) saveData();
+}
+
+function loadDefaults() {
+    bosses = rawData.map((b, idx) => ({ ...b, id: idx, nextSpawn: b.type === 'fixed' ? null : parseInitTime(b.initTime) }));
+    saveData();
+}
+
+function recalcFixedBosses() {
+    const now = new Date();
+    bosses.forEach(boss => {
+        if (boss.type === 'fixed' && boss.fixTime) {
+            const [fh, fm] = boss.fixTime.split(':').map(Number);
+            let target = new Date();
+            target.setHours(fh, fm, 0, 0);
+            if (now.getTime() > target.getTime()) target.setDate(target.getDate() + 1);
+            boss.nextSpawn = target.getTime();
+        }
+    });
+}
+
+function renderStaticList() {
+    const list = document.getElementById('bossList');
+    if(!list) return;
+
+    const sorted = [...bosses].sort((a,b) => {
+        if(!a.nextSpawn) return 1;
+        if(!b.nextSpawn) return -1;
+        return a.nextSpawn - b.nextSpawn;
+    });
+
+    let html = "";
+    sorted.forEach(boss => {
+        let inputHtml = "";
+        if (boss.type === 'fixed') {
+            inputHtml = `<div class="auto-tag">🔄 自動循環</div>`;
+        } else {
+            inputHtml = `
+                <div class="input-row">
+                    <input type="text" id="in-${boss.id}" class="datepicker" placeholder="點擊選擇時間">
+                    <button class="btn btn-update" onclick="update(${boss.id})">更新擊殺時間</button>
+                </div>`;
+        }
+
+        html += `
+            <div id="card-${boss.id}" class="boss-card">
+                <div class="boss-info">
+                    <div class="boss-top-row">
+                        <div class="boss-name">${boss.name}</div>
+                        <div class="boss-meta">${boss.type === 'fixed' ? '固定 ' + boss.fixTime : 'CD:' + boss.cd + 'h'}</div>
+                    </div>
+                    <div class="boss-loc">📍 ${boss.loc}</div>
+                    <div id="timer-${boss.id}" class="boss-timer">-- : --</div>
+                    <div id="predict-${boss.id}" class="boss-predict">出現時間: ---</div>
+                </div>
+                <div class="input-group">${inputHtml}</div>
+            </div>`;
+    });
+    list.innerHTML = html;
+
+    flatpickr(".datepicker", {
+        enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true,
+        locale: "zh_tw", minuteIncrement: 1, disableMobile: "true"
+    });
+    
+    updateTimers();
+}
+
+function updateTimers() {
+    const now = new Date().getTime();
+    bosses.forEach(boss => {
+        const cardEl = document.getElementById(`card-${boss.id}`);
+        const timerEl = document.getElementById(`timer-${boss.id}`);
+        const predictEl = document.getElementById(`predict-${boss.id}`);
+        if (!cardEl || !timerEl) return;
+
+        let statusClass = "status-cd"; 
+        let timerText = "-- : --";
+        let predictText = "---";
+        let isHighlight = false;
+
+        if (boss.nextSpawn) {
+            const diff = boss.nextSpawn - now;
+            const d = new Date(boss.nextSpawn);
+            predictText = `出現時間: ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+            if (diff <= 0) {
+                statusClass = "status-active"; timerText = "🔥 已出現"; isHighlight = true;
+            } else {
+                const hh = Math.floor(diff / 3600000);
+                const mm = Math.floor((diff % 3600000) / 60000);
+                const ss = Math.floor((diff % 60000) / 1000);
+                timerText = `倒數 ${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+                if (diff < 600000) { statusClass = "status-soon"; isHighlight = true; } 
+                else if (boss.type === 'fixed') { statusClass = "status-fixed"; }
+            }
+        }
+
+        timerEl.innerText = timerText;
+        predictEl.innerText = predictText;
+        
+        cardEl.classList.remove('status-active', 'status-soon', 'status-cd', 'status-fixed');
+        if (statusClass) cardEl.classList.add(statusClass);
+        if (isHighlight) timerEl.classList.add('highlight-text'); else timerEl.classList.remove('highlight-text');
+    });
+}
+
+function saveData() { db.ref('bosses').set(bosses).catch(e => alert("同步失敗：" + e.message)); }
+
+window.update = function(id) {
+    const input = document.getElementById(`in-${id}`);
+    if(!input || !input.value) return alert("請先點擊選擇擊殺時間，再按下更新！");
+    const killTime = new Date(input.value).getTime();
+    if(isNaN(killTime)) return alert("時間格式錯誤");
+    
+    const bossIndex = bosses.findIndex(b => b.id === id);
+    if (bossIndex === -1) return;
+    const boss = bosses[bossIndex];
+
+    if (boss.type === 'cd') {
+        const addMin = boss.cd * 60;
+        let nextTime = new Date(killTime);
+        nextTime.setMinutes(nextTime.getMinutes() + addMin);
+        boss.nextSpawn = nextTime.getTime();
+        saveData();
+        input.value = "";
+    }
+};
+
+window.hardReset = function() { if(confirm("確定要重置「雲端」所有數據回預設值嗎？這會影響所有人！")) loadDefaults(); };
+
+window.copyToClipboard = function() {
+    const text = formatListText(getSortedList());
+    navigator.clipboard.writeText(text).then(()=>alert("已複製文字！")).catch(()=>alert("複製失敗"));
+};
+
+window.sendToDiscord = function() {
+    const url = DISCORD_WEBHOOK_URL; 
+    const description = formatListText(getSortedList(), false);
+    const payload = {
+        username: "月歸俏秘書",
+        embeds: [{
+            title: "📢 起床吃王啦",
+            description: description + "\n\n🔗 [開啟工具網頁](https://willa0916.github.io/zenonia-boss/)",
+            color: 5814783, 
+            footer: { text: "更新時間: " + new Date().toLocaleTimeString('zh-TW', { hour12: false }) }
+        }]
+    };
+    fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+    .then(res => { if(res.ok) alert("✅ 已發送到 Discord！"); else alert("❌ 發送失敗"); })
+    .catch(err => alert("❌ 錯誤: " + err));
+};
+
+function getSortedList() {
+    return [...bosses].filter(b => b.nextSpawn).sort((a,b) => a.nextSpawn - b.nextSpawn);
+}
+
+function formatListText(list, isCodeBlock = true) {
+    const now = new Date().getTime();
+    let text = isCodeBlock ? "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n" : "";
+    list.forEach(b => {
+        const d = new Date(b.nextSpawn);
+        const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        const diff = b.nextSpawn - now;
+        
+        if (isCodeBlock) {
+            let icon = diff <= 0 ? "+" : (diff < 600000 ? "!" : "-");
+            text += `${icon} ${b.name} (${b.loc})\n      時間: ${tStr}\n`;
+        } else {
+            let statusEmoji = diff <= 0 ? "🔥 **已出現**" : (diff < 600000 ? "⚠️ **即將出現**" : "⏳");
+            text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
+        }
+    });
+    return text + (isCodeBlock ? "```" : "");
+}
+
+// ================= 今日運勢功能 (JavaScript) =================
+const fortunes = [
+    { type: "🧧 大吉", title: "單抽入魂", desc: "今日運勢爆棚，隨便單抽都能看見彩光！建議立刻把身上的卡都抽光，紅變紅精靈+1" },
+    { type: "🧧 大吉", title: "恥度大開", desc: "今日掉寶率與恥力成正比！打王前，在DC隨機@一位成員大喊「我愛你，請賜給我力量！」若對方給予你回覆，掉寶率將獲得神秘加成。" },
+    { type: "💀 大凶", title: "碎碎平安", desc: "裝備強化介面今日被施了詛咒。如果不想看到「強化失敗，裝備已損毀」的畫面，請務必把手綁起來。" },
+    { type: "💀 大凶", title: "讀心系統上線", desc: "遊戲系統已鎖定你的願望清單。越想抽到的越抽不到，建議今天假裝自己什麼都不想要，無欲則剛。" },
+    { type: "🧧 大吉", title: "酒國女神的眷顧", desc: "立即找酒國女英雄兼點裝天尊「嬌嬌」拚酒！獲勝時今日衝裝成功率體感暴增100%！" },
+    { type: "🔮 特殊", title: "裸點狂熱者", desc: "受到嬌嬌的靈魂附體，今日你沒有退路！衝裝不需要準備備用裝備，感覺來了就直接點下去！爆了就當作是請官方喝的酒錢，過了你就是神！" },
+    { type: "💀 大凶", title: "太奶的召喚", desc: "今日犯沖，極易成為寶老闆發送組隊邀請時的犧牲品。只要看到他靠近，請立刻跑起來不要被他點到，否則分分鐘送你去見太奶！" },
+    { type: "🍂 小吉", title: "舉杯杯的祝福", desc: "今日運勢平平，但只要在公會頻道對森董大喊一聲「舉杯杯！」就能獲得神秘Buff，角色醉步風騷走位所有野王拿你沒皮條！" },
+    { type: "🍂 小吉", title: "天菜的凝視", desc: "今日桃花運異常旺盛（限同性）！帶著公會天菜「本本姐」的祝福，所有男性 NPC 對你的好感度直接拉滿。甚至有機會讓男 BOSS 對你手下留情♥" },
+    { type: "💀 大凶", title: "體力透支警告", desc: "今日氣虛，切忌模仿守羌在打王時「炒飯」。若強行一心二用，高機率導致雙腳發軟並引發滅團翻車，請乖乖把雙手放在鍵盤滑鼠上保平安。" },
+    { type: "🔮 特殊", title: "掛機炒飯的奧義", desc: "你意外領悟了守羌的掛機真傳。今日若在打野王時完全放開雙手假裝去炒飯，BOSS 將有極高機率把你當成場景物件不攻擊你。" },
+    { type: "🌧️ 小凶", title: "冰媽的提醒", desc: "今日水逆Debuff發作，極易觸發隱藏陷阱「冰媽的碎念」。唯一解法就是看到老媽子發話時，務必在一分鐘內回覆「好的，有冰媽的孩子像個寶」。若敢已讀不回，分分鐘把你流放到一般騎士面壁思過！" },
+    { type: "🍂 小吉", title: "雞排的野外", desc: "受到雞排神秘氣場的加持，今日極度適合在深夜展開激烈的野外戰鬥。雖然絕對會因此錯過打王的集合時間，但這種劇烈的雙人戰鬥將為你帶來身心舒暢與微幅的掉寶率提升。" },
+    { type: "💀 大凶", title: "憂雨的精算", desc: "今日挑戰130自帶必死 Debuff。當你在前線殘血狂喊救命時，只看見憂雨冷靜且充滿自信的一句：「別慌，我算過了，這招死不了。」下一秒你直接趴在冰冷的地板上。" },
+    { type: "🔄 改運卡", title: "課金改命卡", desc: "覺得今天非氣纏身？立刻向永遠 18 歲的木木獻上 666 鑽，即可啟動神秘的改運陣法。心誠則靈，運勢重新洗牌！" },
+    { type: "🔄 改運卡", title: "祭品召喚卡", desc: "運氣太差怎麼辦？立即出發討伐冰媽全家，吸收滿滿的「祭品之力」，用最殘暴的方式強行把幸運值拉滿！" },
+    { type: "🔄 改運卡", title: "物理淨化卡", desc: "厄運纏身洗不掉？立刻到風哥面前誠心懇求他手起刀落送你上路，在榜一毀天滅地的傷害面前，你身上的非酋厄運將連同你的血條一起被瞬間蒸發！" }
+];
+
+window.stagedFortune = null;
+
+function getTodayString() {
+    const now = new Date();
+    return now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate();
+}
+
+function openFortuneModal() {
+    const modal = document.getElementById('fortune-modal');
+    const card = document.getElementById('fortune-card');
+    const title = document.getElementById('fortune-title');
+    const verifyBtn = document.getElementById('verify-btn');
+    
+    modal.style.display = 'flex';
+    
+    const savedData = localStorage.getItem('zenonia_fortune_v8'); 
+    
+    if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (parsed.date === getTodayString()) {
+            window.stagedFortune = parsed.fortune;
+            applyThemeToCard(window.stagedFortune);
+            applyTextToCard(window.stagedFortune);
+            
+            if (parsed.isFlipped) {
+                title.innerText = "您今日的專屬運勢";
+                card.classList.add('is-flipped');
+                if (window.stagedFortune.type.includes('凶')) {
+                    if (parsed.verifyUsed) {
+                        verifyBtn.style.display = 'block';
+                        verifyBtn.className = 'failed';
+                        verifyBtn.innerText = '🙅 拍妹幽問題！';
+                    } else {
+                        verifyBtn.style.display = 'block';
+                        verifyBtn.className = '';
+                        verifyBtn.innerText = '🕵️ 窩要驗牌！(25%機率重抽)';
+                    }
+                } else {
+                    verifyBtn.style.display = 'none';
+                }
+            } else {
+                title.innerText = "抽一張今日運勢";
+                card.classList.remove('is-flipped');
+                verifyBtn.style.display = 'none';
+            }
+            return; 
+        }
+    }
+    
+    drawNewCard();
+}
+
+function drawNewCard(isVerifyReroll = false) {
+    const randomIndex = Math.floor(Math.random() * fortunes.length);
+    window.stagedFortune = fortunes[randomIndex];
+    
+    const saveData = {
+        date: getTodayString(),
+        fortune: window.stagedFortune,
+        isFlipped: false,
+        verifyUsed: false
+    };
+    
+    if (isVerifyReroll) {
+        saveData.verifyUsed = true;
+    }
+    
+    localStorage.setItem('zenonia_fortune_v8', JSON.stringify(saveData));
+    
+    applyThemeToCard(window.stagedFortune);
+    applyTextToCard(window.stagedFortune);
+    
+    document.getElementById('fortune-title').innerText = "抽一張今日運勢";
+    document.getElementById('fortune-card').classList.remove('is-flipped'); 
+    document.getElementById('verify-btn').style.display = 'none';
+}
+
+function closeFortuneModal(event) {
+    if (event && event.target.id !== 'fortune-modal' && !event.target.classList.contains('close-btn')) return;
+    document.getElementById('fortune-modal').style.display = 'none';
+}
+
+function flipCard() {
+    const card = document.getElementById('fortune-card');
+    if (card.classList.contains('is-flipped')) return;
+    
+    const savedData = JSON.parse(localStorage.getItem('zenonia_fortune_v8'));
+    savedData.isFlipped = true;
+    localStorage.setItem('zenonia_fortune_v8', JSON.stringify(savedData));
+    
+    card.classList.add('is-flipped');
+    document.getElementById('fortune-title').innerText = "您今日的專屬運勢";
+    
+    if (window.stagedFortune.type.includes('凶') && !savedData.verifyUsed) {
+        const verifyBtn = document.getElementById('verify-btn');
+        verifyBtn.style.display = 'block';
+        verifyBtn.className = '';
+        verifyBtn.innerText = '🕵️ 窩要驗牌！(25%機率重抽)';
+    }
+}
+
+function verifyCard(event) {
+    event.stopPropagation(); 
+    
+    const btn = document.getElementById('verify-btn');
+    if (btn.classList.contains('failed')) return; 
+    
+    const savedData = JSON.parse(localStorage.getItem('zenonia_fortune_v8'));
+    savedData.verifyUsed = true; 
+    
+    const isSuccess = Math.random() < 0.25;
+    
+    if (isSuccess) {
+        alert("🎉 驗牌成功！發牌員手抖了，讓你重抽一次！");
+        document.getElementById('fortune-card').classList.remove('is-flipped');
+        
+        setTimeout(() => {
+            drawNewCard(true); 
+        }, 300);
+        
+    } else {
         btn.classList.add('failed');
         btn.innerText = '🙅 拍妹幽問題！';
         localStorage.setItem('zenonia_fortune_v8', JSON.stringify(savedData));
