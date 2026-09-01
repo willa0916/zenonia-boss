@@ -246,8 +246,8 @@
     </div>
 
     <div class="tip">
-        <strong>v34.2 趣味更新：</strong><br>
-        法國賭神「迪卡皮箱」降臨！抽到大凶別怕，大喊「窩要驗排」爭取 25% 翻盤機會！
+        <strong>v34.3 趣味更新：</strong><br>
+        法國賭神「迪卡皮箱」降臨！抽到大凶別怕，大喊「窩要驗牌」爭取 25% 翻盤機會！
     </div>
 </div>
 
@@ -273,7 +273,7 @@
             </div>
         </div>
         <!-- 新增驗牌按鈕 -->
-        <button id="verify-btn" onclick="verifyCard(event)">🕵️ 窩要驗排！(25%機率重抽)</button>
+        <button id="verify-btn" onclick="verifyCard(event)">🕵️ 窩要驗牌！(25%機率重抽)</button>
     </div>
 </div>
 
@@ -555,10 +555,7 @@ function getSortedList() {
 
 function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
-    let text = "";
-    if(isCodeBlock) {
-        text += "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
-    }
+    let text = isCodeBlock ? "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n" : "";
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -572,8 +569,7 @@ function formatListText(list, isCodeBlock = true) {
             text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
         }
     });
-    if(isCodeBlock) text += "```";
-    return text;
+    return text + (isCodeBlock ? "```" : "");
 }
 
 // ================= 今日運勢功能 (JavaScript) =================
@@ -612,7 +608,6 @@ function openFortuneModal() {
     
     modal.style.display = 'flex';
     
-    // 【記憶鑰匙 v8】實裝驗牌系統
     const savedData = localStorage.getItem('zenonia_fortune_v8'); 
     
     if (savedData) {
@@ -629,11 +624,11 @@ function openFortuneModal() {
                     if (parsed.verifyUsed) {
                         verifyBtn.style.display = 'block';
                         verifyBtn.className = 'failed';
-                        verifyBtn.innerText = '🙅 拍妹幽問題！';
+                        verifyBtn.innerText = '🙅 牌沒有問題！';
                     } else {
                         verifyBtn.style.display = 'block';
                         verifyBtn.className = '';
-                        verifyBtn.innerText = '🕵️ 窩要驗排！(25%機率重抽)';
+                        verifyBtn.innerText = '🕵️ 窩要驗牌！(25%機率重抽)';
                     }
                 } else {
                     verifyBtn.style.display = 'none';
@@ -695,7 +690,7 @@ function flipCard() {
         const verifyBtn = document.getElementById('verify-btn');
         verifyBtn.style.display = 'block';
         verifyBtn.className = '';
-        verifyBtn.innerText = '🕵️ 窩要驗排！(25%機率重抽)';
+        verifyBtn.innerText = '🕵️ 窩要驗牌！(25%機率重抽)';
     }
 }
 
@@ -720,7 +715,7 @@ function verifyCard(event) {
         
     } else {
         btn.classList.add('failed');
-        btn.innerText = '🙅 拍妹幽問題！';
+        btn.innerText = '🙅 牌沒有問題！';
         localStorage.setItem('zenonia_fortune_v8', JSON.stringify(savedData));
     }
 }
