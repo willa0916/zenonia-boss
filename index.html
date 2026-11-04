@@ -246,8 +246,8 @@
     </div>
 
     <div class="tip">
-        <strong>v35.0 名單擴增：</strong><br>
-        新增 Lv130 異色的哈尼文與多位鏡像地圖 BOSS 提醒功能！
+        <strong>v36.0 穩定更新：</strong><br>
+        智能修復 ID 衝突問題，iOS 支援全面優化，鏡像王全面監控中！
     </div>
 </div>
 
@@ -375,8 +375,10 @@ function init() {
     db.ref('bosses').on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) {
-            bosses = val;
-            if(bosses.length < rawData.length) mergeNewBosses();
+            // 避免 Firebase 回傳帶有 null 的稀疏陣列
+            bosses = val.filter(b => b != null);
+            // 執行智能 ID 修復與資料合併
+            fixAndMergeData();
         } else {
             loadDefaults();
         }
@@ -393,16 +395,50 @@ function init() {
     }, 1000);
 }
 
-function mergeNewBosses() {
-    let updated = false;
-    rawData.forEach((newBoss, idx) => {
-        const exists = bosses.find(b => b.name === newBoss.name);
-        if (!exists) {
-            bosses.push({ ...newBoss, id: idx, nextSpawn: newBoss.type === 'fixed' ? null : parseInitTime(newBoss.initTime) });
-            updated = true;
+// 【智能修復模組】徹底解決 ID 重複導致更新錯王的問題
+function fixAndMergeData() {
+    let needsSave = false;
+    let maxId = -1;
+    let idSet = new Set();
+    
+    // 找出目前最大的 ID
+    bosses.forEach(b => {
+        if (b.id !== undefined && b.id !== null) {
+            maxId = Math.max(maxId, b.id);
         }
     });
-    if (updated) saveData();
+    
+    // 檢查並修復重複的 ID
+    bosses.forEach(b => {
+        if (b.id === undefined || b.id === null || idSet.has(b.id)) {
+            maxId++;
+            b.id = maxId;
+            needsSave = true;
+        } else {
+            idSet.add(b.id);
+        }
+    });
+    
+    // 將 rawData 中遺漏的新 BOSS 加進來，並更新既有 BOSS 的 CD 或地點
+    rawData.forEach(newBoss => {
+        const exists = bosses.find(b => b.name === newBoss.name);
+        if (!exists) {
+            maxId++;
+            bosses.push({ ...newBoss, id: maxId, nextSpawn: newBoss.type === 'fixed' ? null : parseInitTime(newBoss.initTime) });
+            needsSave = true;
+        } else {
+            if (exists.cd !== newBoss.cd || exists.loc !== newBoss.loc) {
+                exists.cd = newBoss.cd;
+                exists.loc = newBoss.loc;
+                needsSave = true;
+            }
+        }
+    });
+    
+    // 如果有修復 ID 或是新增 BOSS，就同步回 Firebase
+    if (needsSave) {
+        saveData();
+    }
 }
 
 function loadDefaults() {
@@ -421,6 +457,17 @@ function recalcFixedBosses() {
             boss.nextSpawn = target.getTime();
         }
     });
+}
+
+// 【顯示優化】自動處理帶小數點的 CD 時間
+function getCdDisplay(boss) {
+    if (boss.type === 'fixed') return '固定 ' + boss.fixTime;
+    if (boss.cd % 1 !== 0) {
+        const h = Math.floor(boss.cd);
+        const m = Math.round((boss.cd - h) * 60);
+        return `CD:${h}h${m}m`;
+    }
+    return `CD:${boss.cd}h`;
 }
 
 function renderStaticList() {
@@ -451,7 +498,7 @@ function renderStaticList() {
                 <div class="boss-info">
                     <div class="boss-top-row">
                         <div class="boss-name">${boss.name}</div>
-                        <div class="boss-meta">${boss.type === 'fixed' ? '固定 ' + boss.fixTime : (boss.name.includes('異色') ? 'CD:9h50m' : 'CD:' + boss.cd + 'h')}</div>
+                        <div class="boss-meta">${getCdDisplay(boss)}</div>
                     </div>
                     <div class="boss-loc">📍 ${boss.loc}</div>
                     <div id="timer-${boss.id}" class="boss-timer">-- : --</div>
@@ -514,20 +561,28 @@ function saveData() { db.ref('bosses').set(bosses).catch(e => alert("同步失�
 window.update = function(id) {
     const input = document.getElementById(`in-${id}`);
     if(!input || !input.value) return alert("請先點擊選擇擊殺時間，再按下更新！");
-    const killTime = new Date(input.value).getTime();
+    
+    // 【iOS 防呆機制】將 YYYY-MM-DD 轉為 YYYY/MM/DD 避免 Invalid Date
+    const safeDateStr = input.value.replace(/-/g, '/');
+    const killTime = new Date(safeDateStr).getTime();
     if(isNaN(killTime)) return alert("時間格式錯誤");
     
     const bossIndex = bosses.findIndex(b => b.id === id);
-    if (bossIndex === -1) return;
+    if (bossIndex === -1) {
+        alert("系統錯誤：找不到該首領，請重整網頁！");
+        return;
+    }
+    
     const boss = bosses[bossIndex];
 
     if (boss.type === 'cd') {
-        const addMin = boss.cd * 60;
+        const addMin = Math.round(boss.cd * 60); // 確保轉為整數分鐘
         let nextTime = new Date(killTime);
         nextTime.setMinutes(nextTime.getMinutes() + addMin);
         boss.nextSpawn = nextTime.getTime();
+        
+        input.value = "處理中..."; // 視覺回饋
         saveData();
-        input.value = "";
     }
 };
 
@@ -542,17 +597,14 @@ window.copyToClipboard = function() {
 window.sendToDiscord = function() {
     const url = DISCORD_WEBHOOK_URL; 
     
-    // 取得排序後的清單與現在時間
     const sortedList = getSortedList();
     const now = new Date().getTime();
     
-    // 尋找「已出現」或是「最快要出現」的第一隻王
     let topBossStatus = "";
     if (sortedList.length > 0) {
         const topBoss = sortedList[0];
         const diff = topBoss.nextSpawn - now;
         
-        // 解析王的名字，把等級去掉讓標題更乾淨 (例如: 埃奇納德(25) -> 埃奇納德)
         let cleanName = topBoss.name.split('(')[0];
         
         if (diff <= 0) {
@@ -564,10 +616,7 @@ window.sendToDiscord = function() {
         }
     }
     
-    // 組合標題
     const embedTitle = "📢 起床吃王啦" + topBossStatus;
-    
-    // 取得完整列表描述
     const description = formatListText(sortedList, false);
     
     const payload = {
