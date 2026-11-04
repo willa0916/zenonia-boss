@@ -246,8 +246,8 @@
     </div>
 
     <div class="tip">
-        <strong>v34.3 趣味更新：</strong><br>
-        法國賭神「迪卡皮箱」降臨！抽到大凶別怕，大喊「窩要驗牌」爭取翻盤機會！
+        <strong>v35.0 名單擴增：</strong><br>
+        新增 Lv130 異色的哈尼文與多位鏡像地圖 BOSS 提醒功能！
     </div>
 </div>
 
@@ -273,7 +273,7 @@
             </div>
         </div>
         <!-- 新增驗牌按鈕 -->
-        <button id="verify-btn" onclick="verifyCard(event)">🕵️ 窩要驗牌！(機率重抽)</button>
+        <button id="verify-btn" onclick="verifyCard(event)">🕵️ 窩要驗牌！(25%機率重抽)</button>
     </div>
 </div>
 
@@ -342,10 +342,16 @@ const rawData = [
     { name: "卡威因(85)", cd: 24, type: "cd", loc: "恥辱的神廟", initTime: "1/8 12:00" },
     
     { name: "厄瑞玻斯(87) [50%機率]", cd: 12, type: "cd", loc: "德瓦森林", initTime: "1/8 12:00" },
+    { name: "厄瑞玻斯(鏡像)(87) [50%機率]", cd: 12, type: "cd", loc: "德瓦森林(鏡像)", initTime: "1/8 12:00" },
     { name: "拉頓的幻影(90)", cd: 48, type: "cd", loc: "海市蜃樓頂層", initTime: "1/8 12:00" },
     { name: "雷斯(94) [50%機率]", cd: 12, type: "cd", loc: "比帕提山脈", initTime: "1/8 12:00" },
+    { name: "雷斯(鏡像)(94) [50%機率]", cd: 12, type: "cd", loc: "比帕提山脈(鏡像)", initTime: "1/8 12:00" },
     { name: "希歐多爾(104) [50%機率]", cd: 12, type: "cd", loc: "拉卡廢墟", initTime: "1/8 12:00" },
-    { name: "索尼安(112) [50%機率]", cd: 12, type: "cd", loc: "巴普勒", initTime: "1/8 12:00" }
+    { name: "希歐多爾(鏡像)(104) [50%機率]", cd: 12, type: "cd", loc: "拉卡廢墟(鏡像)", initTime: "1/8 12:00" },
+    { name: "索尼安(112) [50%機率]", cd: 12, type: "cd", loc: "巴普勒", initTime: "1/8 12:00" },
+    { name: "索尼安(鏡像)(112) [50%機率]", cd: 12, type: "cd", loc: "巴普勒(鏡像)", initTime: "1/8 12:00" },
+    { name: "異色的哈尼文(130) [50%機率]", cd: 590/60, type: "cd", loc: "巴普勒", initTime: "1/8 12:00" },
+    { name: "異色的哈尼文(鏡像)(130) [50%機率]", cd: 590/60, type: "cd", loc: "巴普勒(鏡像)", initTime: "1/8 12:00" }
 ];
 
 let bosses = [];
@@ -445,7 +451,7 @@ function renderStaticList() {
                 <div class="boss-info">
                     <div class="boss-top-row">
                         <div class="boss-name">${boss.name}</div>
-                        <div class="boss-meta">${boss.type === 'fixed' ? '固定 ' + boss.fixTime : 'CD:' + boss.cd + 'h'}</div>
+                        <div class="boss-meta">${boss.type === 'fixed' ? '固定 ' + boss.fixTime : (boss.name.includes('異色') ? 'CD:9h50m' : 'CD:' + boss.cd + 'h')}</div>
                     </div>
                     <div class="boss-loc">📍 ${boss.loc}</div>
                     <div id="timer-${boss.id}" class="boss-timer">-- : --</div>
@@ -532,18 +538,48 @@ window.copyToClipboard = function() {
     navigator.clipboard.writeText(text).then(()=>alert("已複製文字！")).catch(()=>alert("複製失敗"));
 };
 
+// 【優化】Discord 通知發送功能，將最緊急的王拉到標題
 window.sendToDiscord = function() {
     const url = DISCORD_WEBHOOK_URL; 
-    const description = formatListText(getSortedList(), false);
+    
+    // 取得排序後的清單與現在時間
+    const sortedList = getSortedList();
+    const now = new Date().getTime();
+    
+    // 尋找「已出現」或是「最快要出現」的第一隻王
+    let topBossStatus = "";
+    if (sortedList.length > 0) {
+        const topBoss = sortedList[0];
+        const diff = topBoss.nextSpawn - now;
+        
+        // 解析王的名字，把等級去掉讓標題更乾淨 (例如: 埃奇納德(25) -> 埃奇納德)
+        let cleanName = topBoss.name.split('(')[0];
+        
+        if (diff <= 0) {
+            topBossStatus = `！🔥${cleanName} 已出現！`;
+        } else if (diff < 600000) {
+            topBossStatus = `！⚠️${cleanName} 即將出現！`;
+        } else {
+            topBossStatus = `！⏳下一個：${cleanName}`;
+        }
+    }
+    
+    // 組合標題
+    const embedTitle = "📢 起床吃王啦" + topBossStatus;
+    
+    // 取得完整列表描述
+    const description = formatListText(sortedList, false);
+    
     const payload = {
         username: "月歸俏秘書",
         embeds: [{
-            title: "📢 起床吃王啦",
+            title: embedTitle,
             description: description + "\n\n🔗 [開啟工具網頁](https://willa0916.github.io/zenonia-boss/)",
             color: 5814783, 
             footer: { text: "更新時間: " + new Date().toLocaleTimeString('zh-TW', { hour12: false }) }
         }]
     };
+    
     fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
     .then(res => { if(res.ok) alert("✅ 已發送到 Discord！"); else alert("❌ 發送失敗"); })
     .catch(err => alert("❌ 錯誤: " + err));
@@ -555,7 +591,10 @@ function getSortedList() {
 
 function formatListText(list, isCodeBlock = true) {
     const now = new Date().getTime();
-    let text = isCodeBlock ? "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n" : "";
+    let text = "";
+    if(isCodeBlock) {
+        text += "📢 **打王時間表**\n🔗 https://willa0916.github.io/zenonia-boss/\n\n```diff\n";
+    }
     list.forEach(b => {
         const d = new Date(b.nextSpawn);
         const tStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -569,7 +608,8 @@ function formatListText(list, isCodeBlock = true) {
             text += `${statusEmoji} **${b.name}**\n📍 ${b.loc} 🕒 **${tStr}**\n\n`;
         }
     });
-    return text + (isCodeBlock ? "```" : "");
+    if(isCodeBlock) text += "```";
+    return text;
 }
 
 // ================= 今日運勢功能 (JavaScript) =================
@@ -586,7 +626,7 @@ const fortunes = [
     { type: "💀 大凶", title: "體力透支警告", desc: "今日氣虛，切忌模仿守羌在打王時「炒飯」。若強行一心二用，高機率導致雙腳發軟並引發滅團翻車，請乖乖把雙手放在鍵盤滑鼠上保平安。" },
     { type: "🔮 特殊", title: "掛機炒飯的奧義", desc: "你意外領悟了守羌的掛機真傳。今日若在打野王時完全放開雙手假裝去炒飯，BOSS 將有極高機率把你當成場景物件不攻擊你。" },
     { type: "🌧️ 小凶", title: "冰媽的提醒", desc: "今日水逆Debuff發作，極易觸發隱藏陷阱「冰媽的碎念」。唯一解法就是看到老媽子發話時，務必在一分鐘內回覆「好的，有冰媽的孩子像個寶」。若敢已讀不回，分分鐘把你流放到一般騎士面壁思過！" },
-    { type: "🍂 小吉", title: "雞排的戰鬥邀請", desc: "受到雞排神秘氣場的加持，今日極度適合在深夜展開激烈的野外戰鬥。雖然絕對會因此錯過打王的集合時間，但這種劇烈的雙人戰鬥將為你帶來身心舒暢與微幅的掉寶率提升。" },
+    { type: "🍂 小吉", title: "雞排的野外", desc: "受到雞排神秘氣場的加持，今日極度適合在深夜展開激烈的野外戰鬥。雖然絕對會因此錯過打王的集合時間，但這種劇烈的雙人戰鬥將為你帶來身心舒暢與微幅的掉寶率提升。" },
     { type: "💀 大凶", title: "憂雨的精算", desc: "今日挑戰130自帶必死 Debuff。當你在前線殘血狂喊救命時，只看見憂雨冷靜且充滿自信的一句：「別慌，我算過了，這招死不了。」下一秒你直接趴在冰冷的地板上。" },
     { type: "🔄 改運卡", title: "課金改命卡", desc: "覺得今天非氣纏身？立刻向永遠 18 歲的木木獻上 666 鑽，即可啟動神秘的改運陣法。心誠則靈，運勢重新洗牌！" },
     { type: "🔄 改運卡", title: "祭品召喚卡", desc: "運氣太差怎麼辦？立即出發討伐冰媽全家，吸收滿滿的「祭品之力」，用最殘暴的方式強行把幸運值拉滿！" },
