@@ -6,6 +6,9 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:;">
     <title>月歸夜 - 打王時間表</title>
     
+    <!-- 🌟 在這裡加入了網頁 Icon 的設定！只要上傳 favicon.png 就會自動顯示 -->
+    <link rel="icon" href="favicon.png" type="image/png">
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     
@@ -236,7 +239,8 @@
         <div class="action-buttons">
             <button class="btn btn-reset" onclick="hardReset()">⚠️ 強制重置</button>
             <button class="btn btn-copy" onclick="copyToClipboard()">📋 複製文字</button>
-            <button class="btn btn-game" onclick="copyGameText()">🎮 遊戲頻道文字</button>
+            <!-- 🌟 修改了這裡的按鈕名稱 -->
+            <button class="btn btn-game" onclick="copyGameText()">🎮 複製2H內排程</button>
             <button class="btn btn-discord" onclick="sendToDiscord()">🚀 發送到 Discord</button>
         </div>
     </div>
@@ -248,7 +252,7 @@
     </div>
 
     <div class="tip">
-        <strong>v37.0 遊戲內建置：</strong><br>
+        <strong>v37.1 遊戲內建置：</strong><br>
         新增專為遊戲頻道設計的未來 2 小時推播文字複製功能！
     </div>
 </div>
