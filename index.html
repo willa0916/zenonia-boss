@@ -64,6 +64,7 @@
         
         .btn { border: none; padding: 10px 18px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; font-size: 0.9rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
         .btn-copy { background-color: #43b581; } 
+        .btn-game { background-color: #e67e22; } /* 遊戲頻道按鈕顏色 */
         .btn-reset { background-color: #ed4245; font-size: 0.8rem;}
         .btn-discord { background-color: #5865F2; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.4); filter: brightness(1.1);}
@@ -235,6 +236,7 @@
         <div class="action-buttons">
             <button class="btn btn-reset" onclick="hardReset()">⚠️ 強制重置</button>
             <button class="btn btn-copy" onclick="copyToClipboard()">📋 複製文字</button>
+            <button class="btn btn-game" onclick="copyGameText()">🎮 遊戲頻道文字</button>
             <button class="btn btn-discord" onclick="sendToDiscord()">🚀 發送到 Discord</button>
         </div>
     </div>
@@ -246,8 +248,8 @@
     </div>
 
     <div class="tip">
-        <strong>v36.1 CD全面更新：</strong><br>
-        已套用最新版 BOSS CD 時間設定！
+        <strong>v37.0 遊戲內建置：</strong><br>
+        新增專為遊戲頻道設計的未來 2 小時推播文字複製功能！
     </div>
 </div>
 
@@ -294,7 +296,7 @@ const firebaseConfig = {
     appId: "1:325794018538:web:3fa748f4f541f227579393"
 };
 
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1567478520568094881/J9XO-QUWFmmGBO2VFGmY3T3dei44NWPA7KkaC2ZVaNlHPOunkf2MTg4_vOTnlI6rIQVl";
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1458746934226452685/WSJ6oiWJL63p8-hvxPRCkBSBOQ-_dCFOGSVSte_nkvjXgipbWFyrEUDDHsiyXNNIokKX";
 
 window.onerror = function(msg, url, line, col, error) {
     const box = document.getElementById('rescue-console');
@@ -375,9 +377,7 @@ function init() {
     db.ref('bosses').on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) {
-            // 避免 Firebase 回傳帶有 null 的稀疏陣列
             bosses = val.filter(b => b != null);
-            // 執行智能 ID 修復與資料合併
             fixAndMergeData();
         } else {
             loadDefaults();
@@ -395,20 +395,17 @@ function init() {
     }, 1000);
 }
 
-// 【智能修復模組】徹底解決 ID 重複導致更新錯王的問題
 function fixAndMergeData() {
     let needsSave = false;
     let maxId = -1;
     let idSet = new Set();
     
-    // 找出目前最大的 ID
     bosses.forEach(b => {
         if (b.id !== undefined && b.id !== null) {
             maxId = Math.max(maxId, b.id);
         }
     });
     
-    // 檢查並修復重複的 ID
     bosses.forEach(b => {
         if (b.id === undefined || b.id === null || idSet.has(b.id)) {
             maxId++;
@@ -419,7 +416,6 @@ function fixAndMergeData() {
         }
     });
     
-    // 將 rawData 中遺漏的新 BOSS 加進來，並更新既有 BOSS 的 CD 或地點
     rawData.forEach(newBoss => {
         const exists = bosses.find(b => b.name === newBoss.name);
         if (!exists) {
@@ -435,7 +431,6 @@ function fixAndMergeData() {
         }
     });
     
-    // 如果有修復 ID 或是新增 BOSS，就同步回 Firebase
     if (needsSave) {
         saveData();
     }
@@ -459,7 +454,6 @@ function recalcFixedBosses() {
     });
 }
 
-// 【顯示優化】處理 CD 顯示文字格式
 function getCdDisplay(boss) {
     if (boss.type === 'fixed') return '固定 ' + boss.fixTime;
     if (boss.name.includes('拉頓')) return 'CD 1天8小時';
@@ -559,7 +553,6 @@ window.update = function(id) {
     const input = document.getElementById(`in-${id}`);
     if(!input || !input.value) return alert("請先點擊選擇擊殺時間，再按下更新！");
     
-    // 【iOS 防呆機制】將 YYYY-MM-DD 轉為 YYYY/MM/DD 避免 Invalid Date
     const safeDateStr = input.value.replace(/-/g, '/');
     const killTime = new Date(safeDateStr).getTime();
     if(isNaN(killTime)) return alert("時間格式錯誤");
@@ -573,24 +566,57 @@ window.update = function(id) {
     const boss = bosses[bossIndex];
 
     if (boss.type === 'cd') {
-        const addMin = Math.round(boss.cd * 60); // 確保轉為整數分鐘
+        const addMin = Math.round(boss.cd * 60); 
         let nextTime = new Date(killTime);
         nextTime.setMinutes(nextTime.getMinutes() + addMin);
         boss.nextSpawn = nextTime.getTime();
         
-        input.value = "處理中..."; // 視覺回饋
+        input.value = "處理中..."; 
         saveData();
     }
 };
 
 window.hardReset = function() { if(confirm("確定要重置「雲端」所有數據回預設值嗎？這會影響所有人！")) loadDefaults(); };
 
+// 原本的詳細版複製文字
 window.copyToClipboard = function() {
     const text = formatListText(getSortedList());
     navigator.clipboard.writeText(text).then(()=>alert("已複製文字！")).catch(()=>alert("複製失敗"));
 };
 
-// 【優化】Discord 通知發送功能，將最緊急的王拉到標題
+// 【新增】遊戲內專用的簡約版複製文字 (抓取未來 2 小時)
+window.copyGameText = function() {
+    const now = new Date().getTime();
+    const twoHoursLater = now + (2 * 60 * 60 * 1000);
+    
+    // 過濾出尚未出現，且在未來 2 小時內會出現的王
+    const upcomingBosses = bosses.filter(b => b.nextSpawn && b.nextSpawn > now && b.nextSpawn <= twoHoursLater)
+                                 .sort((a, b) => a.nextSpawn - b.nextSpawn);
+    
+    if (upcomingBosses.length === 0) {
+        alert("未來 2 小時內沒有預計出現的 BOSS。");
+        return;
+    }
+
+    // 抽出時間與等級並組裝
+    const items = upcomingBosses.map(b => {
+        const d = new Date(b.nextSpawn);
+        const tStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        
+        // 利用正規表達式抓出掛號內的數字 (例如: (50) -> 50)
+        const match = b.name.match(/\((\d+)\)/);
+        const lvStr = match ? `Lv${match[1]}` : b.name;
+        
+        return `${tStr} - ${lvStr}`;
+    });
+
+    const text = `［稍後Boss］${items.join(' | ')}`;
+    
+    navigator.clipboard.writeText(text)
+        .then(() => alert("已複製遊戲頻道專用文字！\n\n" + text))
+        .catch(() => alert("複製失敗"));
+};
+
 window.sendToDiscord = function() {
     const url = DISCORD_WEBHOOK_URL; 
     
