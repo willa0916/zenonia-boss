@@ -614,7 +614,7 @@ window.copyGameText = function() {
         return `${tStr} - ${lvStr}`;
     });
 
-    const text = `［稍後Boss］${items.join(' | ')}`;
+    const text = `［稍後的王］${items.join(' | ')}`;
     
     navigator.clipboard.writeText(text)
         .then(() => alert("已複製遊戲頻道專用文字！\n\n" + text))
