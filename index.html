@@ -251,8 +251,8 @@
     </div>
 
     <div class="tip">
-        <strong>v37.3 遊戲內建置：</strong><br>
-        「複製2H內排程」已支援鏡像王！會自動以 "m" (如 Lv94m) 進行精準標記。
+        <strong>v37.4 遊戲內建置：</strong><br>
+        「複製2H內排程」分隔符號已調整為雙斜線 (//)，相容遊戲內頻道顯示
     </div>
 </div>
 
@@ -587,7 +587,7 @@ window.copyToClipboard = function() {
     navigator.clipboard.writeText(text).then(()=>alert("已複製文字！")).catch(()=>alert("複製失敗"));
 };
 
-// 【新增】遊戲內專用的簡約版複製文字 (抓取未來 2 小時，且自動排除固定時間首領，加入鏡像標記 m)
+// 【新增】遊戲內專用的簡約版複製文字 (抓取未來 2 小時，排除固定王，鏡像標記 m，雙斜線分隔)
 window.copyGameText = function() {
     const now = new Date().getTime();
     const twoHoursLater = now + (2 * 60 * 60 * 1000);
@@ -618,10 +618,10 @@ window.copyGameText = function() {
             }
         }
         
-        return `${tStr} - ${lvStr}`;
+        return `${tStr}-${lvStr}`;
     });
 
-    const text = `［稍後Boss］${items.join(' | ')}`;
+    const text = `［稍後Boss］${items.join(' // ')}`;
     
     navigator.clipboard.writeText(text)
         .then(() => alert("已複製遊戲頻道專用文字！\n\n" + text))
